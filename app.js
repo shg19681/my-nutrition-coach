@@ -55,3 +55,42 @@ const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY
 );
+
+async function signUp(email, password) {
+  const { data, error } = await supabaseClient.auth.signUp({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("خطأ في إنشاء الحساب: " + error.message);
+    return;
+  }
+
+  alert("تم إرسال رسالة تأكيد إلى بريدك الإلكتروني إذا كان التأكيد مطلوباً.");
+}
+
+async function signIn(email, password) {
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (error) {
+    alert("خطأ في تسجيل الدخول: " + error.message);
+    return;
+  }
+
+  alert("تم تسجيل الدخول بنجاح");
+}
+
+async function signOut() {
+  const { error } = await supabaseClient.auth.signOut();
+
+  if (error) {
+    alert("تعذر تسجيل الخروج: " + error.message);
+    return;
+  }
+
+  alert("تم تسجيل الخروج");
+}
