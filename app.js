@@ -44,7 +44,7 @@ async function askCoach(e){e.preventDefault();const input=e.target.elements.mess
 function saveSettings(e){e.preventDefault();const f=new FormData(e.target);for(const k of ['age','height','goalWeight','calories','protein','trainingDays'])state.profile[k]=Number(f.get(k));for(const k of ['trainingTime','firstMeal'])state.profile[k]=f.get(k);save();render();alert('تم حفظ إعداداتك')}
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-nutrition-coach-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
 async function importData(e){const file=e.target.files?.[0];if(!file)return;try{const obj=JSON.parse(await file.text());if(!obj.profile||!Array.isArray(obj.weights)||!Array.isArray(obj.measurements))throw Error();if(!confirm('استيراد الملف يستبدل البيانات الحالية. تبي تكمل؟'))return;state={...initial,...obj};save();render()}catch{alert('ملف النسخة الاحتياطية غير صالح')}}
-nav();render();
+
 
 const SUPABASE_URL = "https://xitctlzolmylyprzttur.supabase.co";
 
