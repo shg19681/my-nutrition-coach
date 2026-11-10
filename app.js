@@ -94,3 +94,49 @@ async function signOut() {
 
   alert("تم تسجيل الخروج");
 }
+
+function showLogin() {
+  document.getElementById("view").innerHTML = `
+    <div class="card" style="max-width:420px;margin:40px auto">
+      <h2>تسجيل الدخول</h2>
+      <p>سجّل دخولك لمزامنة بياناتك بين أجهزتك.</p>
+
+      <form id="loginForm" class="formGrid">
+        <div class="field full">
+          <label>البريد الإلكتروني</label>
+          <input type="email" name="email" required>
+        </div>
+
+        <div class="field full">
+          <label>كلمة المرور</label>
+          <input type="password" name="password"
+                 minlength="6" required>
+        </div>
+
+        <div class="full flex">
+          <button class="button" type="submit">
+            تسجيل الدخول
+          </button>
+          <button class="button secondary"
+                  type="button" id="signupBtn">
+            إنشاء حساب
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const form = document.getElementById("loginForm");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = new FormData(form);
+    await signIn(data.get("email"), data.get("password"));
+  });
+
+  document.getElementById("signupBtn").onclick = async () => {
+    const data = new FormData(form);
+    if (!form.reportValidity()) return;
+    await signUp(data.get("email"), data.get("password"));
+  };
+}
