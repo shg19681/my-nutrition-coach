@@ -140,3 +140,29 @@ function showLogin() {
     await signUp(data.get("email"), data.get("password"));
   };
 }
+
+async function startAuth() {
+  const { data, error } = await supabaseClient.auth.getUser();
+
+  if (error && error.name !== "AuthSessionMissingError") {
+    console.error("Auth error:", error.message);
+  }
+
+  if (data?.user) {
+    nav();
+    render();
+  } else {
+    showLogin();
+  }
+}
+
+supabaseClient.auth.onAuthStateChange((_event, session) => {
+  if (session?.user) {
+    nav();
+    render();
+  } else {
+    showLogin();
+  }
+});
+
+startAuth();
