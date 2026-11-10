@@ -45,3 +45,13 @@ function saveSettings(e){e.preventDefault();const f=new FormData(e.target);for(c
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-nutrition-coach-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
 async function importData(e){const file=e.target.files?.[0];if(!file)return;try{const obj=JSON.parse(await file.text());if(!obj.profile||!Array.isArray(obj.weights)||!Array.isArray(obj.measurements))throw Error();if(!confirm('استيراد الملف يستبدل البيانات الحالية. تبي تكمل؟'))return;state={...initial,...obj};save();render()}catch{alert('ملف النسخة الاحتياطية غير صالح')}}
 nav();render();
+
+const SUPABASE_URL = "https://xitctlzolmylyprzttur.supabase.co";
+
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_NxDgXdO5AnzLl_0hH5MG4g_C4kyDRg_";
+
+const supabaseClient = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
