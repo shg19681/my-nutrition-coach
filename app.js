@@ -38,12 +38,9 @@ function settingsPage(){const p=state.profile;return `<div class="two"><div clas
   <p class="subtle">
     نقل القياسات المحفوظة على هذا الجهاز إلى Supabase
   </p>
-  <button
-    type="button"
-    class="button secondary" 
-onclick="migrateOldMeasurements()">
-    نقل القياسات إلى السحابة
-  </button>
+  
+<button type="button" class="button secondary" onclick="migrateOldMeasurements()">نقل القياسات إلى السحابة</button>
+
 </div>
 <div class="card"><h3>نسخة احتياطية</h3>
 <p class="subtle">بيانات النسخة الحالية محفوظة في متصفح هذا الجهاز فقط، وما تتزامن تلقائياً بين الأجهزة. تقدر تنقلها بملف.</p><div class="flex"><button class="button secondary" onclick="exportData()">تصدير البيانات</button><label class="button ghost" style="cursor:pointer">استيراد ملف <input type="file" accept="application/json" hidden onchange="importData(event)"></label></div></div><div class="card"><h3>الخصوصية والتنبيهات</h3><p class="subtle">التنبيهات الآلية والمزامنة السحابية وتسجيل الدخول ليست مفعّلة في هذه النسخة الأولية. يفضّل تشغيلها على استضافة آمنة HTTPS قبل الاستخدام على أكثر من جهاز.</p></div></div></div>`}
