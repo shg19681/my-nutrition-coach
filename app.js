@@ -40,9 +40,8 @@ function settingsPage(){const p=state.profile;return `<div class="two"><div clas
   </p>
   <button
     type="button"
-    class="button secondary"
-    
- onclick="migrateOldMeasurements()">
+    class="button secondary" 
+onclick="migrateOldMeasurements()">
     نقل القياسات إلى السحابة
   </button>
 </div>
