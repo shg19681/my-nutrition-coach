@@ -33,7 +33,82 @@ function measuresPage(){const arr=[...state.measurements].sort((a,b)=>b.date.loc
 function coachPage(){return `<div class="card"><div class="rowbetween"><div><h3>اسأل مدربك الذكي ✧</h3><p class="subtle">يراعي بياناتك ووزنك المسجل وجدولك الغذائي.</p></div><div class="field"><select id="provider" onchange="setProvider(this.value)"><option value="claude" ${state.provider==='claude'?'selected':''}>Claude</option><option value="chatgpt" ${state.provider==='chatgpt'?'selected':''}>ChatGPT</option></select></div></div><div class="chatlog" id="chatlog">${state.chat.length?state.chat.map(x=>`<div class="bubble ${x.role==='user'?'user':'bot'}">${safe(x.text)}</div>`).join(''):'<div class="empty">مثال: شنو أكل بعد تمرين الصبح؟ أو عدّل وجباتي حسب آخر وزن.</div>'}</div><form class="chatrow" onsubmit="askCoach(event)"><input name="message" required maxlength="5000" placeholder="اكتب سؤالك للمدرب..." autocomplete="off"><button id="sendBtn" class="button">إرسال</button></form><p class="notice" style="margin-top:15px">لتفعيل المحادثة الحقيقية، شغّل السيرفر بمفاتيح Claude وOpenAI في متغيرات البيئة. اشتراك ChatGPT أو Claude الشخصي لا يشمل بالضرورة استخدام API، وقد تكون عليه تكلفة منفصلة. بياناتك المرسلة للمحادثة تُرسل إلى مزوّد الذكاء الاصطناعي المختار.</p></div>`}
 function settingsPage(){const p=state.profile;return `<div class="two"><div class="card"><h3>الملف الشخصي والأهداف</h3><form class="formGrid" onsubmit="saveSettings(event)">${[['age','العمر','سنة'],['height','الطول','سم'],['goalWeight','الوزن المستهدف','كجم'],['calories','هدف السعرات اليومي','سعرة'],['protein','هدف البروتين اليومي','غ'],['trainingDays','أيام النادي أسبوعياً','يوم']].map(([n,l,u])=>`<div class="field"><label>${l} (${u})</label><input name="${n}" type="number" step="${n==='goalWeight'?'0.1':'1'}" min="1" value="${p[n]}" required></div>`).join('')}<div class="field"><label>وقت النادي</label><input name="trainingTime" type="time" value="${p.trainingTime}"></div><div class="field"><label>وقت أول وجبة</label><input name="firstMeal" type="time" value="${p.firstMeal}"></div><div class="full"><button class="button">حفظ الإعدادات</button></div></form></div><div class="stack"><div class="card"><h3>تفضيلاتك المحفوظة</h3><p class="subtle">كويتي وإيراني ومشاوي وستيك. بدون أكل هندي أو واي بروتين أو حليب سادة. فواكه مفضلة: تمر، موز، فراولة، تفاح. يوم مفتوح مرن.</p></div><div class="card"><h3>نسخة احتياطية</h3><p class="subtle">بيانات النسخة الحالية محفوظة في متصفح هذا الجهاز فقط، وما تتزامن تلقائياً بين الأجهزة. تقدر تنقلها بملف.</p><div class="flex"><button class="button secondary" onclick="exportData()">تصدير البيانات</button><label class="button ghost" style="cursor:pointer">استيراد ملف <input type="file" accept="application/json" hidden onchange="importData(event)"></label></div></div><div class="card"><h3>الخصوصية والتنبيهات</h3><p class="subtle">التنبيهات الآلية والمزامنة السحابية وتسجيل الدخول ليست مفعّلة في هذه النسخة الأولية. يفضّل تشغيلها على استضافة آمنة HTTPS قبل الاستخدام على أكثر من جهاز.</p></div></div></div>`}
 function render(){document.getElementById('todayLabel').textContent=new Date().toLocaleDateString('ar-KW',{weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,coach:coachPage,settings:settingsPage})[page]();if(page==='coach'){let el=document.getElementById('chatlog');el.scrollTop=el.scrollHeight}}
-function addWeight(e){e.preventDefault();const f=new FormData(e.target),date=f.get('date'),weight=Number(f.get('weight'));if(!Number.isFinite(weight)||weight<30||weight>350)return alert('تأكد من الوزن');state.weights=state.weights.filter(x=>x.date!==date);state.weights.push({date,weight});save();render()}
+
+async function addWeight(e) {
+  e.preventDefault();
+
+  const form = e.target;
+  const f = new FormData(form);
+  const date = f.get("date");
+  const weight = Number(f.get("weight"));
+
+  if (!Number.isFinite(weight) || weight < 30 || weight > 350) {
+    alert("تأكد من الوزن");
+    return;
+  }
+
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    alert("سجّل الدخول أولاً");
+    return;
+  }
+
+  const { data: existing, error: lookupError } =
+    await supabaseClient
+      .from("weight_logs")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("log_date", date)
+      .limit(1);
+
+  if (lookupError) {
+    alert("تعذر فحص الوزن: " + lookupError.message);
+    return;
+  }
+
+  const record = {
+    user_id: user.id,
+    log_date: date,
+    weight_kg: weight
+  };
+
+  let result;
+
+  if (existing.length > 0) {
+    result = await supabaseClient
+      .from("weight_logs")
+      .update({ weight_kg: weight })
+      .eq("id", existing[0].id)
+      .eq("user_id", user.id)
+      .select();
+  } else {
+    result = await supabaseClient
+      .from("weight_logs")
+      .insert(record)
+      .select();
+  }
+
+  if (result.error || !result.data?.length) {
+    alert(
+      "تعذر حفظ الوزن: " +
+      (result.error?.message || "لم يتم تأكيد الحفظ")
+    );
+    return;
+  }
+
+  state.weights = state.weights.filter(
+    x => x.date !== date
+  );
+
+  state.weights.push({ date, weight });
+  save();
+  render();
+
+  alert("تم حفظ الوزن في Supabase بنجاح");
+}
+
 function deleteWeight(date){if(!confirm('تحذف تسجيل الوزن؟'))return;state.weights=state.weights.filter(x=>x.date!==date);save();render()}
 function addMeasures(e){e.preventDefault();const f=new FormData(e.target),obj={date:f.get('date')};for(const k of ['waist','chest','hips','arm','thigh'])if(f.get(k)!==''){const n=Number(f.get(k));if(n<=0||n>250)return alert('تأكد من القياسات');obj[k]=n}if(Object.keys(obj).length===1)return alert('أدخل قياس واحد على الأقل');state.measurements=state.measurements.filter(x=>x.date!==obj.date);state.measurements.push(obj);save();render()}
 function deleteMeasure(date){if(!confirm('تحذف القياسات؟'))return;state.measurements=state.measurements.filter(x=>x.date!==date);save();render()}
