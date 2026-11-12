@@ -216,20 +216,24 @@ function showLogin() {
   };
 }
 
+
 async function startAuth() {
-  const { data, error } = await supabaseClient.auth.getUser();
+  const { data, error } =
+    await supabaseClient.auth.getUser();
 
   if (error && error.name !== "AuthSessionMissingError") {
     console.error("Auth error:", error.message);
   }
 
   if (data?.user) {
+    await loadCloudWeights(data.user.id);
     nav();
     render();
   } else {
     showLogin();
   }
 }
+
 
 supabaseClient.auth.onAuthStateChange((_event, session) => {
   if (session?.user) {
@@ -241,3 +245,38 @@ supabaseClient.auth.onAuthStateChange((_event, session) => {
 });
 
 startAuth();
+
+async function loadCloudWeights(userId) {
+  const { data, error } = await supabaseClient
+    .from("weight_logs")
+    .select("log_date, weight_kg")
+    .eq("user_id", userId)
+    .order("log_date", { ascending: true });
+
+  if (error) {
+    console.error("Weight sync error:", error.message);
+    alert("تعذر تحميل الأوزان من السحابة");
+    return;
+  }
+
+  const cloudWeights = data.map(row => ({
+    date: row.log_date,
+    weight: Number(row.weight_kg)
+  }));
+
+  // الاحتفاظ بالسجلات المحلية القديمة
+  const merged = new Map(
+    state.weights.map(item => [item.date, item])
+  );
+
+  // عند تكرار التاريخ نعتمد نسخة Supabase
+  cloudWeights.forEach(item => {
+    merged.set(item.date, item);
+  });
+
+  state.weights = [...merged.values()].sort(
+    (a, b) => a.date.localeCompare(b.date)
+  );
+
+  save();
+}
