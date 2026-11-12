@@ -235,12 +235,20 @@ async function startAuth() {
 }
 
 
-supabaseClient.auth.onAuthStateChange((_event, session) => {
-  if (session?.user) {
-    nav();
-    render();
-  } else {
+
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") {
     showLogin();
+    return;
+  }
+
+  if (event === "SIGNED_IN" && session?.user) {
+    // نؤجل تحميل البيانات إلى خارج حدث المصادقة
+    setTimeout(async () => {
+      await loadCloudWeights(session.user.id);
+      nav();
+      render();
+    }, 0);
   }
 });
 
