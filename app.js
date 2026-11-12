@@ -42,7 +42,7 @@ function settingsPage(){const p=state.profile;return `<div class="two"><div clas
     type="button"
     class="button secondary"
     onclick="migrateOldMeasurements()
-async function loadCloudMeasurements(userId) {
+
   const { data, error } = await supabaseClient
     .from("body_measurements")
     .select(
