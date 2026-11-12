@@ -300,9 +300,6 @@ async function loadCloudWeights(userId) {
 
   save();
 }
-
-async function migrateOldMeasurements() {
-
 async function migrateOldMeasurements() {
   const { data: { user }, error: authError } =
     await supabaseClient.auth.getUser();
