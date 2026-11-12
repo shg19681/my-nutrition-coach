@@ -412,3 +412,99 @@ async function loadCloudMeasurements(userId) {
     " سجل قياسات إلى Supabase بنجاح"
   );
 }
+
+async function loadCloudMeasurements(userId) {
+  const { data, error } = await supabaseClient
+    .from("body_measurements")
+    .select("log_date, waist_cm, chest_cm, hip_cm, arm_cm, thigh_cm")
+    .eq("user_id", userId)
+    .order("log_date", { ascending: true });
+
+  if (error) {
+    console.error("Measurements sync error:", error.message);
+    alert("تعذر تحميل القياسات من السحابة");
+    return;
+  }
+
+  const cloudMeasurements = data.map(row => {
+    const item = { date: row.log_date };
+
+    const fields = {
+      waist: row.waist_cm,
+      chest: row.chest_cm,
+      hips: row.hip_cm,
+      arm: row.arm_cm,
+      thigh: row.thigh_cm
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== null && value !== undefined) {
+        item[key] = Number(value);
+      }
+    }
+
+    return item;
+  });
+
+  const merged = new Map(
+    state.measurements.map(item => [item.date, item])
+  );
+
+  cloudMeasurements.forEach(item => {
+    merged.set(item.date, item);
+  });
+
+  state.measurements = [...merged.values()].sort(
+    (a, b) => a.date.localeCompare(b.date)
+  );
+
+  save();
+}
+
+async function loadCloudMeasurements(userId) {
+  const { data, error } = await supabaseClient
+    .from("body_measurements")
+    .select("log_date, waist_cm, chest_cm, hip_cm, arm_cm, thigh_cm")
+    .eq("user_id", userId)
+    .order("log_date", { ascending: true });
+
+  if (error) {
+    console.error("Measurements sync error:", error.message);
+    alert("تعذر تحميل القياسات من السحابة");
+    return;
+  }
+
+  const cloudMeasurements = data.map(row => {
+    const item = { date: row.log_date };
+
+    const fields = {
+      waist: row.waist_cm,
+      chest: row.chest_cm,
+      hips: row.hip_cm,
+      arm: row.arm_cm,
+      thigh: row.thigh_cm
+    };
+
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== null && value !== undefined) {
+        item[key] = Number(value);
+      }
+    }
+
+    return item;
+  });
+
+  const merged = new Map(
+    state.measurements.map(item => [item.date, item])
+  );
+
+  cloudMeasurements.forEach(item => {
+    merged.set(item.date, item);
+  });
+
+  state.measurements = [...merged.values()].sort(
+    (a, b) => a.date.localeCompare(b.date)
+  );
+
+  save();
+}
