@@ -303,6 +303,53 @@ async function loadCloudWeights(userId) {
 
 async function migrateOldMeasurements() {
 
+async function migrateOldMeasurements() {
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    alert("سجّل الدخول أولاً");
+    return;
+  }
+
+  const oldMeasurements = state.measurements || [];
+
+  if (!oldMeasurements.length) {
+    alert("ما فيه قياسات محلية للنقل");
+    return;
+  }
+
+  const { data: cloudRows, error: readError } =
+    await supabaseClient
+      .from("body_measurements")
+      .select("log_date")
+      .eq("user_id", user.id);
+
+  if (readError) {
+    alert("تعذر فحص القياسات: " + readError.message);
+    return;
+  }
+
+  const existingDates = new Set(
+    cloudRows.map(row => row.log_date)
+  );
+
+  const rows = oldMeasurements
+    .filter(item => !existingDates.has(item.date))
+    .map(item => ({
+      user_id: user.id,
+      log_date: item.date,
+      waist_cm: item.waist ?? null,
+      chest_cm: item.chest ?? null,
+      hip_cm: item.hips ?? null,
+      arm_cm: item.arm ?? null,
+      thigh_cm: item.thigh ?? null
+    }));
+
+  if (!rows.length) {
+    alert("كل تواريخ القياسات موجودة بالسحابة مسبقاً");
+    return;
+  }
 
   const { data, error } = await supabaseClient
     .from("body_measurements")
@@ -314,13 +361,9 @@ async function migrateOldMeasurements() {
     return;
   }
 
-  alert(
-    "تم نقل " + data.length +
-    " سجل قياسات إلى Supabase بنجاح"
-  );
+  alert("تم نقل " + data.length + " سجل قياسات بنجاح");
 }
 
-async function loadCloudMeasurements(userId) {
   const { data, error } = await supabaseClient
     .from("body_measurements")
     .select("log_date, waist_cm, chest_cm, hip_cm, arm_cm, thigh_cm")
