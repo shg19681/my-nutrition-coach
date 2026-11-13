@@ -571,7 +571,7 @@ async function loadCloudMeasurements(userId) {
 
   
   // Supabase هو المصدر الأساسي للقياسات
-  state.measurements = cloudMeasurements.sort(
+   state.measurements = cloudMeasurements.sort(
     (a, b) => a.date.localeCompare(b.date)
   );
 
