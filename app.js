@@ -298,7 +298,25 @@ function toggleMeal(d,i,v){state.done[d+'-'+i]=v;save();render()}
 function selectDay(d){selectedDay=d;render()}function openDay(d){state.openDay=state.openDay===d?null:d;save();render()}function setCurrentDay(d){state.day=d;save();render()}function advanceDay(){state.day=state.day===7?1:state.day+1;selectedDay=state.day;save();render()}
 function setProvider(p){state.provider=p;save()}
 async function askCoach(e){e.preventDefault();const input=e.target.elements.message;const message=input.value.trim();if(!message)return;state.chat.push({role:'user',text:message});input.value='';save();render();const btn=document.getElementById('sendBtn');btn.disabled=true;btn.textContent='...';try{const r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({provider:state.provider,message,context:{profile:state.profile,weights:state.weights.slice(-30),measurements:state.measurements.slice(-10),day:state.day,openDay:state.openDay,meals:days[state.day-1],done:state.done}})});const j=await r.json();state.chat.push({role:'bot',text:j.reply||'تعذر الاتصال: '+(j.error||'خطأ غير معروف')})}catch{state.chat.push({role:'bot',text:'تعذر الوصول إلى السيرفر. شغّل التطبيق من خلال Node.js، مو بفتح ملف HTML مباشرة.'})}save();render()}
-function saveSettings(e){e.preventDefault();const f=new FormData(e.target);for(const k of ['age','height','goalWeight','calories','protein','trainingDays'])state.profile[k]=Number(f.get(k));for(const k of ['trainingTime','firstMeal'])state.profile[k]=f.get(k);save();render();alert('تم حفظ إعداداتك')}
+
+async function saveSettings(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+
+  for (const k of ['age', 'height', 'goalWeight', 'calories', 'protein', 'trainingDays']) {
+    state.profile[k] = Number(f.get(k));
+  }
+
+  for (const k of ['trainingTime', 'firstMeal']) {
+    state.profile[k] = f.get(k);
+  }
+
+  save();
+  render();
+
+  await saveCloudSettings();
+}
+
 function exportData(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='my-nutrition-coach-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),500)}
 async function importData(e){const file=e.target.files?.[0];if(!file)return;try{const obj=JSON.parse(await file.text());if(!obj.profile||!Array.isArray(obj.weights)||!Array.isArray(obj.measurements))throw Error();if(!confirm('استيراد الملف يستبدل البيانات الحالية. تبي تكمل؟'))return;state={...initial,...obj};save();render()}catch{alert('ملف النسخة الاحتياطية غير صالح')}}
 
