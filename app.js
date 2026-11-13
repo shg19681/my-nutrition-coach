@@ -25,8 +25,50 @@ function nav(){document.getElementById('desktopNav').innerHTML=items.map(([id,ic
 function go(p){page=p;nav();render();window.scrollTo(0,0)}
 function cardMetric(label,value,unit,hint){return `<div class="card"><div class="metric-label">${label}</div><div class="metric">${value} <small>${unit}</small></div><div class="hint">${hint}</div></div>`}
 function chart(){const data=[...state.weights].sort((a,b)=>a.date.localeCompare(b.date)).slice(-12);if(data.length<2)return `<div class="empty">أضف وزن جديد عشان يطلع لك الرسم البياني للتقدم</div>`;const vals=data.map(x=>+x.weight);const min=Math.min(...vals)-.5,max=Math.max(...vals)+.5;const points=data.map((x,i)=>`${32+(i/(data.length-1))*440},${178-(x.weight-min)/(max-min)*145}`).join(' ');return `<svg class="chart" viewBox="0 0 500 205" preserveAspectRatio="none"><line x1="30" y1="32" x2="480" y2="32"/><line x1="30" y1="105" x2="480" y2="105"/><line x1="30" y1="178" x2="480" y2="178"/><polyline points="${points}"/><text x="30" y="195">${safe(data[0].date)}</text><text x="400" y="195">${safe(data.at(-1).date)}</text></svg>`}
-function mealRows(d,checkboxes=false){if(state.openDay===d)return `<div class="empty">هذا اليوم مفتوح ومرن. سجّل وجباتك المعتادة وراعِ الشبع والبروتين بدون تشدد.</div>`;return days[d-1].map((m,i)=>`<div class="meal"><div><strong>${safe(m.name)}</strong><small>${safe(m.t)} · ${safe(m.time)}<br>${safe(m.detail)}</small></div>${checkboxes?`<label class="checkline"><input type="checkbox" ${state.done[d+'-'+i]?'checked':''} onchange="toggleMeal(${d},${i},this.checked)"> تم</label>`:`<span class="pill">${safe(m.t)}</span>`}</div>`).join('')}
-function dashboard(){const w=latest()?.weight||99.4;const done=days[state.day-1].filter((_,i)=>state.done[state.day+'-'+i]).length;return `<section class="hero"><div><div class="tag">✦ رحلتك مستمرة</div><h2>هلا فيك، جاهز ليوم أقوى؟</h2><p>كل تسجيل صغير يقربك من هدفك.<br>اليوم ${state.day} من برنامجك الغذائي المتسلسل.</p></div><div class="round"><div><b>${state.day}/7</b>اليوم</div></div></section><div class="grid">${cardMetric('آخر وزن',fmt(w),'كجم','آخر تسجيل: '+safe(latest()?.date||'—'))}${cardMetric('الوزن المستهدف',fmt(state.profile.goalWeight),'كجم','تقدر تعدله بالإعدادات')}${cardMetric('التمارين',state.profile.trainingDays,'أيام/أسبوع','مقاومة + كارديو')}</div><div class="two" style="margin-top:18px"><div class="card"><div class="rowbetween"><h3>وجبات اليوم ${state.day}</h3><button class="button secondary" onclick="go('food')">الجدول كامل</button></div>${mealRows(state.day,true)}<div class="progress"><span style="width:${done*25}%"></span></div><div class="hint" style="margin-top:9px">أنجزت ${done} من 4 وجبات</div></div><div class="stack"><div class="card"><h3>تطور وزنك</h3>${chart()}<button class="button secondary" onclick="go('weight')">سجّل وزن اليوم</button></div><div class="card"><h3>هدفك اليومي المبدئي</h3><div class="rowbetween"><span>السعرات</span><b>${state.profile.calories} سعرة</b></div><div class="progress"><span style="width:65%"></span></div><p class="hint">هدف تخطيطي، مو استهلاك فعلي محسوب.</p><div class="rowbetween"><span>البروتين</span><b>${state.profile.protein} غ</b></div></div></div></div>`}
+
+function mealRows(d, checkboxes = false) {
+  const isOpen = state.openDay === d;
+
+  if (isOpen) {
+    return `<div class="empty">هذا اليوم مفتوح ومرن. سجّل وجباتك المعتادة وراعِ الشبع والبروتين بدون تشدد.</div>`;
+  }
+
+  const sourceDay =
+    d === 7 && state.openDay >= 1 && state.openDay <= 6
+      ? state.openDay
+      : d;
+
+  return days[sourceDay - 1].map((m, i) => `
+    <div class="meal">
+      <div>
+        <strong>${safe(m.name)}</strong>
+        <small>${safe(m.t)} · ${safe(m.time)}<br>${safe(m.detail)}</small>
+      </div>
+      ${checkboxes
+        ? `<label class="checkline">
+             <input type="checkbox"
+               ${state.done[sourceDay + '-' + i] ? 'checked' : ''}
+               onchange="toggleMeal(${sourceDay},${i},this.checked)">
+             تم
+           </label>`
+        : `<span class="pill">${safe(m.t)}</span>`
+      }
+    </div>
+  `).join('');
+}
+
+function dashboard(){const w=latest()?.weight||99.4;
+const sourceDay =
+  state.day === 7 && state.openDay >= 1 && state.openDay <= 6
+    ? state.openDay
+    : state.day;
+
+const done = state.openDay === state.day
+  ? 0
+  : days[sourceDay - 1].filter(
+      (_, i) => state.done[sourceDay + '-' + i]
+    ).length;
+return `<section class="hero"><div><div class="tag">✦ رحلتك مستمرة</div><h2>هلا فيك، جاهز ليوم أقوى؟</h2><p>كل تسجيل صغير يقربك من هدفك.<br>اليوم ${state.day} من برنامجك الغذائي المتسلسل.</p></div><div class="round"><div><b>${state.day}/7</b>اليوم</div></div></section><div class="grid">${cardMetric('آخر وزن',fmt(w),'كجم','آخر تسجيل: '+safe(latest()?.date||'—'))}${cardMetric('الوزن المستهدف',fmt(state.profile.goalWeight),'كجم','تقدر تعدله بالإعدادات')}${cardMetric('التمارين',state.profile.trainingDays,'أيام/أسبوع','مقاومة + كارديو')}</div><div class="two" style="margin-top:18px"><div class="card"><div class="rowbetween"><h3>وجبات اليوم ${state.day}</h3><button class="button secondary" onclick="go('food')">الجدول كامل</button></div>${mealRows(state.day,true)}<div class="progress"><span style="width:${done*25}%"></span></div><div class="hint" style="margin-top:9px">أنجزت ${done} من 4 وجبات</div></div><div class="stack"><div class="card"><h3>تطور وزنك</h3>${chart()}<button class="button secondary" onclick="go('weight')">سجّل وزن اليوم</button></div><div class="card"><h3>هدفك اليومي المبدئي</h3><div class="rowbetween"><span>السعرات</span><b>${state.profile.calories} سعرة</b></div><div class="progress"><span style="width:65%"></span></div><p class="hint">هدف تخطيطي، مو استهلاك فعلي محسوب.</p><div class="rowbetween"><span>البروتين</span><b>${state.profile.protein} غ</b></div></div></div></div>`}
 function weightPage(){const arr=[...state.weights].sort((a,b)=>b.date.localeCompare(a.date));return `<div class="two"><div class="card"><h3>سجّل وزنك</h3><form onsubmit="addWeight(event)" class="formGrid"><div class="field"><label>التاريخ</label><input name="date" type="date" required value="${dateNow()}"></div><div class="field"><label>الوزن (كجم)</label><input name="weight" type="number" min="30" max="350" step="0.1" placeholder="99.4" required></div><div class="full"><button class="button">حفظ الوزن</button></div></form><p class="hint">الأفضل تقيس الصبح بعد الحمام وقبل الفطور وبنفس الميزان.</p></div><div class="card"><h3>منحنى الوزن</h3>${chart()}</div></div><div class="sectionHead"><h2>سجل الوزن</h2></div><div class="card"><table class="weightList"><thead><tr><th>التاريخ</th><th>الوزن</th><th></th></tr></thead><tbody>${arr.map(x=>`<tr><td>${safe(x.date)}</td><td>${fmt(x.weight)} كجم</td><td><button class="button ghost" onclick="deleteWeight('${safe(x.date)}')">حذف</button></td></tr>`).join('')}</tbody></table></div>`}
 function foodPage(){return `<div class="card"><div class="rowbetween"><div><h3>برنامجك الغذائي المرن</h3><p class="subtle">أيام متسلسلة، مو مرتبطة بأيام الأسبوع. اضغط على أي يوم لعرض وجباته.</p></div><span class="tag">اليوم الحالي ${state.day}</span></div><div class="daytabs">${days.map((_,i)=>`<button class="${selectedDay===i+1?'active':''}" onclick="selectDay(${i+1})">اليوم ${i+1}${state.openDay===i+1?' ★':''}</button>`).join('')}</div><div class="sectionHead"><h2>وجبات اليوم ${selectedDay}</h2><button class="button ghost" onclick="openDay(${selectedDay})">${state.openDay===selectedDay?'إلغاء اليوم المفتوح':'اجعله اليوم المفتوح'}</button></div>${mealRows(selectedDay,true)}<div class="flex" style="margin-top:18px"><button class="button" onclick="advanceDay()">انتقل لليوم التالي ←</button><button class="button secondary" onclick="setCurrentDay(${selectedDay})">اعتمد هذا اليوم كالحالي</button></div></div><p class="notice" style="margin-top:14px">الوجبات من جدولك المصوّر. الأوزان المذكورة للدجاج واللحوم والأسماك والرز والبطاطا بعد الطبخ؛ الزيت بالغرام. السعرات والبروتين اليوميان في الإعدادات أهداف تقديرية وليسا حساباً مؤكداً لهذه الوجبات. اختر اليوم المفتوح بأي يوم يناسبك.</p>`}
 function measuresPage(){const arr=[...state.measurements].sort((a,b)=>b.date.localeCompare(a.date));return `<div class="two"><div class="card"><h3>أضف قياسات الجسم</h3><form onsubmit="addMeasures(event)" class="formGrid"><div class="field full"><label>التاريخ</label><input type="date" name="date" required value="${dateNow()}"></div>${[['waist','محيط البطن'],['chest','الصدر'],['hips','الحوض'],['arm','الذراع'],['thigh','الفخذ']].map(([n,l])=>`<div class="field"><label>${l} (سم)</label><input type="number" step="0.1" min="1" max="250" name="${n}" placeholder="اختياري"></div>`).join('')}<div class="full"><button class="button">حفظ القياسات</button></div></form></div><div class="card"><h3>آخر القياسات</h3>${arr.length?Object.entries(arr[0]).filter(([k])=>k!=='date').map(([k,v])=>`<div class="meal"><strong>${({waist:'البطن',chest:'الصدر',hips:'الحوض',arm:'الذراع',thigh:'الفخذ'})[k]}</strong><b>${fmt(v)} سم</b></div>`).join(''):'<div class="empty">ما سجلت قياسات للحين</div>'}</div></div><div class="sectionHead"><h2>سجل القياسات</h2></div><div class="card">${arr.length?arr.map(x=>`<div class="meal"><div><strong>${safe(x.date)}</strong><small>${Object.entries(x).filter(([k])=>k!=='date').map(([k,v])=>`${({waist:'البطن',chest:'الصدر',hips:'الحوض',arm:'الذراع',thigh:'الفخذ'})[k]}: ${fmt(v)} سم`).join(' · ')}</small></div><button class="button ghost" onclick="deleteMeasure('${safe(x.date)}')">حذف</button></div>`).join(''):'<div class="empty">سجّل قياساتك الأولى</div>'}</div>`}
