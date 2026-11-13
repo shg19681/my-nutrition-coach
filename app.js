@@ -237,7 +237,7 @@ async function startAuth() {
     console.error("Auth error:", error.message);
   }
 
-  if (data?.user) {
+   if (data?.user) {
     await loadCloudWeights(data.user.id);
     await loadCloudMeasurements(data.user.id);
     nav();
@@ -246,7 +246,6 @@ async function startAuth() {
     showLogin();
   }
 }
-
 
 
 supabaseClient.auth.onAuthStateChange((event, session) => {
