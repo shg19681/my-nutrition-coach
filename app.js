@@ -615,3 +615,33 @@ async function saveCloudSettings() {
 
   alert("تم حفظ الإعدادات في Supabase بنجاح");
 }
+
+
+
+async function loadCloudSettings(userId) {
+  const { data, error } = await supabaseClient
+    .from("coach_settings")
+    .select("settings")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    alert("تعذر تحميل الإعدادات: " + error.message);
+    return;
+  }
+
+  if (!data?.settings) return;
+
+  const s = data.settings;
+
+  if (s.profile) {
+    state.profile = { ...state.profile, ...s.profile };
+  }
+
+  if (s.day !== undefined) state.day = s.day;
+  if (s.openDay !== undefined) state.openDay = s.openDay;
+  if (s.done) state.done = s.done;
+
+  selectedDay = state.day;
+  save();
+}
