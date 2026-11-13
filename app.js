@@ -307,10 +307,14 @@ async function saveSettings(e) {
     state.profile[k] = Number(f.get(k));
   }
 
-  for (const k of ['trainingTime', 'firstMeal']) {
+ for (const k of ['trainingTime', 'firstMeal']) { 
     state.profile[k] = f.get(k);
   }
+  save();
+  render();
 
+  await saveCloudSettings();
+}
   save();
   render();
 
