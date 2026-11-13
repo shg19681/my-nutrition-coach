@@ -568,3 +568,33 @@ async function loadCloudMeasurements(userId) {
   
   save();
 }
+
+async function saveCloudSettings() {
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    alert("سجّل الدخول أولاً");
+    return;
+  }
+
+  const { error } = await supabaseClient
+    .from("coach_settings")
+    .upsert({
+      user_id: user.id,
+      settings: {
+        profile: state.profile,
+        day: state.day,
+        openDay: state.openDay,
+        done: state.done
+      },
+      updated_at: new Date().toISOString()
+    }, { onConflict: "user_id" });
+
+  if (error) {
+    alert("تعذر حفظ الإعدادات بالسحابة: " + error.message);
+    return;
+  }
+
+  alert("تم حفظ الإعدادات في Supabase بنجاح");
+}
