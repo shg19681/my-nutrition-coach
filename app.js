@@ -257,10 +257,11 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
   if (event === "SIGNED_IN" && session?.user) {
     // نؤجل تحميل البيانات إلى خارج حدث المصادقة
     setTimeout(async () => {
-      await loadCloudWeights(session.user.id);
-      nav();
-      render();
-    }, 0);
+  await loadCloudWeights(session.user.id);
+  await loadCloudMeasurements(session.user.id);
+  nav();
+  render();
+}, 0);
   }
 });
 
