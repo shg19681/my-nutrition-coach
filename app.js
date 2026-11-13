@@ -217,7 +217,45 @@ async function addMeasures(e) {
   alert("تم حفظ القياسات في Supabase بنجاح");
 }
 
-function deleteMeasure(date){if(!confirm('تحذف القياسات؟'))return;state.measurements=state.measurements.filter(x=>x.date!==date);save();render()}
+
+async function deleteMeasure(date) {
+  if (!confirm("تحذف القياسات؟")) return;
+
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    alert("سجّل الدخول أولاً");
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("body_measurements")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("log_date", date)
+    .select("id");
+
+  if (error) {
+    alert("تعذر حذف القياسات: " + error.message);
+    return;
+  }
+
+  if (!data?.length) {
+    alert("ما لقينا القياس بالسحابة. ما تم الحذف.");
+    return;
+  }
+
+  state.measurements = state.measurements.filter(
+    x => x.date !== date
+  );
+
+  save();
+  render();
+
+  alert("تم حذف القياسات من Supabase بنجاح");
+}
+
 function toggleMeal(d,i,v){state.done[d+'-'+i]=v;save();render()}
 function selectDay(d){selectedDay=d;render()}function openDay(d){state.openDay=state.openDay===d?null:d;save();render()}function setCurrentDay(d){state.day=d;save();render()}function advanceDay(){state.day=state.day===7?1:state.day+1;selectedDay=state.day;save();render()}
 function setProvider(p){state.provider=p;save()}
