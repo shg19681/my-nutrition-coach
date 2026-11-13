@@ -562,6 +562,8 @@ async function loadCloudMeasurements(userId) {
   
   // Supabase هو المصدر الأساسي للقياسات
   // القياسات المحذوفة لا ترجع من ذاكرة الأجهزة
+  
+  // Supabase هو المصدر الأساسي للقياسات
   state.measurements = cloudMeasurements.sort(
     (a, b) => a.date.localeCompare(b.date)
   );
