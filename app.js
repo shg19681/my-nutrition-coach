@@ -427,6 +427,7 @@ async function startAuth() {
    if (data?.user) {
     await loadCloudWeights(data.user.id);
     await loadCloudMeasurements(data.user.id);
+    await loadCloudSettings(data.user.id); 
     nav();
     render();
   } else {
@@ -445,7 +446,8 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     // نؤجل تحميل البيانات إلى خارج حدث المصادقة
     setTimeout(async () => {
   await loadCloudWeights(session.user.id);
-   await loadCloudMeasurements(session.user.id);   
+   await loadCloudMeasurements(session.user.id);  
+   await loadCloudSettings(session.user.id);   
   nav();
   render();
 }, 0);
