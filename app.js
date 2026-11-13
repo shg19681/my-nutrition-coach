@@ -387,7 +387,7 @@ const SUPABASE_URL = "https://xitctlzolmylyprzttur.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_NxDgXdO5AnzLl_0hH5MG4g_C4kyDRg_";
-
+if (!window.supabase) alert("خطأ: مكتبة Supabase لم يتم تحميلها");
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY
