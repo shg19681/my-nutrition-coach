@@ -122,7 +122,101 @@ async function addWeight(e) {
 }
 
 function deleteWeight(date){if(!confirm('تحذف تسجيل الوزن؟'))return;state.weights=state.weights.filter(x=>x.date!==date);save();render()}
-function addMeasures(e){e.preventDefault();const f=new FormData(e.target),obj={date:f.get('date')};for(const k of ['waist','chest','hips','arm','thigh'])if(f.get(k)!==''){const n=Number(f.get(k));if(n<=0||n>250)return alert('تأكد من القياسات');obj[k]=n}if(Object.keys(obj).length===1)return alert('أدخل قياس واحد على الأقل');state.measurements=state.measurements.filter(x=>x.date!==obj.date);state.measurements.push(obj);save();render()}
+
+async function addMeasures(e) {
+  e.preventDefault();
+
+  const form = e.target;
+  const f = new FormData(form);
+  const obj = { date: f.get("date") };
+
+  for (const k of ["waist", "chest", "hips", "arm", "thigh"]) {
+    if (f.get(k) !== "") {
+      const n = Number(f.get(k));
+      if (!Number.isFinite(n) || n <= 0 || n > 250) {
+        alert("تأكد من القياسات");
+        return;
+      }
+      obj[k] = n;
+    }
+  }
+
+  if (Object.keys(obj).length === 1) {
+    alert("أدخل قياس واحد على الأقل");
+    return;
+  }
+
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    alert("سجّل الدخول أولاً");
+    return;
+  }
+
+  const { data: existing, error: lookupError } =
+    await supabaseClient
+      .from("body_measurements")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("log_date", obj.date)
+      .limit(1);
+
+  if (lookupError) {
+    alert("تعذر فحص القياسات: " + lookupError.message);
+    return;
+  }
+
+  const record = {
+    user_id: user.id,
+    log_date: obj.date,
+    waist_cm: obj.waist ?? null,
+    chest_cm: obj.chest ?? null,
+    hip_cm: obj.hips ?? null,
+    arm_cm: obj.arm ?? null,
+    thigh_cm: obj.thigh ?? null
+  };
+
+  let result;
+
+  if (existing.length > 0) {
+    result = await supabaseClient
+      .from("body_measurements")
+      .update({
+        waist_cm: record.waist_cm,
+        chest_cm: record.chest_cm,
+        hip_cm: record.hip_cm,
+        arm_cm: record.arm_cm,
+        thigh_cm: record.thigh_cm
+      })
+      .eq("id", existing[0].id)
+      .eq("user_id", user.id)
+      .select("id");
+  } else {
+    result = await supabaseClient
+      .from("body_measurements")
+      .insert(record)
+      .select("id");
+  }
+
+  if (result.error || !result.data?.length) {
+    alert(
+      "تعذر حفظ القياسات: " +
+      (result.error?.message || "لم يتم تأكيد الحفظ")
+    );
+    return;
+  }
+
+  state.measurements = state.measurements.filter(
+    x => x.date !== obj.date
+  );
+  state.measurements.push(obj);
+  save();
+  render();
+
+  alert("تم حفظ القياسات في Supabase بنجاح");
+}
+
 function deleteMeasure(date){if(!confirm('تحذف القياسات؟'))return;state.measurements=state.measurements.filter(x=>x.date!==date);save();render()}
 function toggleMeal(d,i,v){state.done[d+'-'+i]=v;save();render()}
 function selectDay(d){selectedDay=d;render()}function openDay(d){state.openDay=state.openDay===d?null:d;save();render()}function setCurrentDay(d){state.day=d;save();render()}function advanceDay(){state.day=state.day===7?1:state.day+1;selectedDay=state.day;save();render()}
