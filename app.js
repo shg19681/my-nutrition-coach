@@ -559,13 +559,13 @@ async function loadCloudMeasurements(userId) {
     return item;
   });
 
-  const merged = new Map(
-    state.measurements.map(item => [item.date, item])
+  
+  // Supabase هو المصدر الأساسي للقياسات
+  // القياسات المحذوفة لا ترجع من ذاكرة الأجهزة
+  state.measurements = cloudMeasurements.sort(
+    (a, b) => a.date.localeCompare(b.date)
   );
 
-  cloudMeasurements.forEach(item => {
-    merged.set(item.date, item);
-  });
 
   state.measurements = [...merged.values()].sort(
     (a, b) => a.date.localeCompare(b.date)
