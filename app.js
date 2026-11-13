@@ -516,7 +516,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 }, 0);
   }
 });
-
+alert("وصل التطبيق إلى مرحلة تسجيل الدخول");
 startAuth();
 
 async function loadCloudWeights(userId) {
