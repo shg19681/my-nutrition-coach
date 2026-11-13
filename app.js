@@ -121,7 +121,45 @@ async function addWeight(e) {
   alert("تم حفظ الوزن في Supabase بنجاح");
 }
 
-function deleteWeight(date){if(!confirm('تحذف تسجيل الوزن؟'))return;state.weights=state.weights.filter(x=>x.date!==date);save();render()}
+
+async function deleteWeight(date) {
+  if (!confirm("تحذف تسجيل الوزن؟")) return;
+
+  const { data: { user }, error: authError } =
+    await supabaseClient.auth.getUser();
+
+  if (authError || !user) {
+    alert("سجّل الدخول أولاً");
+    return;
+  }
+
+  const { data, error } = await supabaseClient
+    .from("weight_logs")
+    .delete()
+    .eq("user_id", user.id)
+    .eq("log_date", date)
+    .select("id");
+
+  if (error) {
+    alert("تعذر حذف الوزن: " + error.message);
+    return;
+  }
+
+  if (!data?.length) {
+    alert("ما لقينا الوزن بالسحابة. ما تم الحذف.");
+    return;
+  }
+
+  state.weights = state.weights.filter(
+    x => x.date !== date
+  );
+
+  save();
+  render();
+
+  alert("تم حذف الوزن من Supabase بنجاح");
+}
+
 
 async function addMeasures(e) {
   e.preventDefault();
