@@ -258,7 +258,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     // نؤجل تحميل البيانات إلى خارج حدث المصادقة
     setTimeout(async () => {
   await loadCloudWeights(session.user.id);
-  await loadCloudMeasurements(session.user.id);
+   await loadCloudMeasurements(session.user.id);   
   nav();
   render();
 }, 0);
