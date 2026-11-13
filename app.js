@@ -237,13 +237,12 @@ async function startAuth() {
     console.error("Auth error:", error.message);
   }
 
-  if (data?.user) {
-    await loadCloudWeights(data.user.id);
-    nav();
-    render();
-  } else {
-    showLogin();
-  }
+if (data?.user) {
+  await loadCloudWeights(data.user.id);
+  await loadCloudMeasurements(data.user.id);
+  nav();
+  render();
+}
 }
 
 
