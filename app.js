@@ -455,19 +455,13 @@ async function loadCloudWeights(userId) {
     weight: Number(row.weight_kg)
   }));
 
-  // الاحتفاظ بالسجلات المحلية القديمة
-  const merged = new Map(
-    state.weights.map(item => [item.date, item])
-  );
-
-  // عند تكرار التاريخ نعتمد نسخة Supabase
-  cloudWeights.forEach(item => {
-    merged.set(item.date, item);
-  });
-
-  state.weights = [...merged.values()].sort(
+  
+  // Supabase هو المصدر الأساسي للأوزان
+  // السجلات المحذوفة من السحابة لا ترجع من الجهاز
+  state.weights = cloudWeights.sort(
     (a, b) => a.date.localeCompare(b.date)
   );
+
 
   save();
 }
