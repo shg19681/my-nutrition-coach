@@ -1,4 +1,3 @@
-alert("بدأ تشغيل app.js");
 const KEY='my-coach-v1';const dateNow=()=>new Date().toLocaleDateString('en-CA');const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const initial={profile:{age:45,height:177,goalWeight:90,calories:2150,protein:180,trainingDays:4,trainingTime:'07:00',firstMeal:'10:00'},weights:[{date:'2026-11-08',weight:99.4}],measurements:[],day:2,openDay:7,done:{},water:{},chat:[],provider:'claude',notes:[],startDate:'2026-11-08'};
 let state;try{state={...initial,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{state=structuredClone(initial)};
@@ -388,8 +387,7 @@ const SUPABASE_URL = "https://xitctlzolmylyprzttur.supabase.co";
 
 const SUPABASE_PUBLISHABLE_KEY =
   "sb_publishable_NxDgXdO5AnzLl_0hH5MG4g_C4kyDRg_";
-if (!window.supabase) alert("خطأ: مكتبة Supabase لم يتم تحميلها");
-alert("وصل التطبيق إلى تهيئة Supabase");
+
 const supabaseClient = window.supabase.createClient(
   SUPABASE_URL,
   SUPABASE_PUBLISHABLE_KEY
@@ -518,7 +516,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 }, 0);
   }
 });
-alert("وصل التطبيق إلى مرحلة تسجيل الدخول");
+
 startAuth();
 
 async function loadCloudWeights(userId) {
