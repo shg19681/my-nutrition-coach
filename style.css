@@ -4,3 +4,5 @@
 
 html[dir="ltr"] .nav button,html[dir="ltr"] .weightList td,html[dir="ltr"] .weightList th{text-align:left}html[dir="ltr"] .mobileNav button{font-size:10px}input[type="number"],input[type="date"],input[type="time"]{direction:ltr}textarea{unicode-bidi:plaintext}html[dir="ltr"] .meal>div{min-width:0;overflow-wrap:anywhere}
 .brandicon img{width:42px;height:42px;display:block}
+
+.mobileBrand{display:none;align-items:center;gap:8px;color:#183b31;font-weight:800}.mobileBrand img{width:38px;height:38px;border-radius:12px}.mobileBrand small{display:block;font-size:10px;letter-spacing:1px;color:#718078}@media(max-width:900px){.mobileBrand{display:flex}}
