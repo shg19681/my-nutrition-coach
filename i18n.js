@@ -1,5 +1,9 @@
 /* Local translations; no external translation service or data uploads. */
 const englishText={
+ "عزم":"AZM",
+ "قوة":"Strength",
+ "تغذية":"Nutrition",
+ "استمرارية":"Consistency",
  "الرئيسية": "Home",
  "الوزن": "Weight",
  "الغذاء": "Meals",
@@ -479,7 +483,7 @@ function localizeUI(){
  languageObserver?.disconnect();
  try{
   document.documentElement.lang=appLanguage;document.documentElement.dir=appLanguage==='en'?'ltr':'rtl';
-  document.title=tr('مدربي الغذائي');
+  document.title=appLanguage==='en'?'AZM | Strength & Nutrition':'عزم | قوة وتغذية';
   // Explicit values preserve Arabic activity/group keys when option labels become English.
   for(const option of document.querySelectorAll('option'))if(!option.hasAttribute('value'))option.setAttribute('value',option.textContent);
   const walker=document.createTreeWalker(document.body,4);let node;

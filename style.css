@@ -3,3 +3,4 @@
 .musclePicker{border:1px solid #dbe4d9;border-radius:12px;display:flex;gap:14px;flex-wrap:wrap;padding:16px}.musclePicker legend{font-size:13px}.exercisePhoto{display:block;max-width:180px;max-height:180px;object-fit:contain;border-radius:12px;margin:12px 0}.exercisePhoto[hidden]{display:none}.mobileNav{overflow-x:auto}.mobileNav button{flex-shrink:0}a.button{display:inline-block;text-decoration:none}fieldset{min-width:0}
 
 html[dir="ltr"] .nav button,html[dir="ltr"] .weightList td,html[dir="ltr"] .weightList th{text-align:left}html[dir="ltr"] .mobileNav button{font-size:10px}input[type="number"],input[type="date"],input[type="time"]{direction:ltr}textarea{unicode-bidi:plaintext}html[dir="ltr"] .meal>div{min-width:0;overflow-wrap:anywhere}
+.brandicon img{width:42px;height:42px;display:block}
