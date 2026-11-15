@@ -78,7 +78,7 @@ function chefMessage(){
 }
 function chefSharePanel(){return `<div class="card" style="margin-top:16px"><h3>إبلاغ الطباخ باليوم المفتوح</h3><p style="white-space:pre-wrap">${safe(chefMessage())}</p><a class="button" href="https://wa.me/?text=${encodeURIComponent(chefMessage())}" target="_blank" rel="noopener">فتح واتساب برسالة جاهزة</a><p class="hint">اختر محادثة الطباخ وراجع الرسالة ثم أرسلها بنفسك. لا يتم إرسال شيء تلقائياً.</p></div>`;}
 
-function coachSummary(sessionOnly=false){
+function coachSummarySource(sessionOnly=false){
  const date=trainingDate||dateNow();
  const sessions=sessionOnly?[[date,sessionFor(date)]]:Object.entries(state.training||{}).sort(([a],[b])=>b.localeCompare(a)).slice(0,14);
  const lines=['راجع بياناتي التالية وقدّم ملاحظاتك بالعربية. أي تعديل على الجدول يحتاج موافقتي.'];
@@ -87,7 +87,7 @@ function coachSummary(sessionOnly=false){
  return lines.join('\n');
 }
 async function copyCoachSummary(sessionOnly=false){
- const text=tr(coachSummary(sessionOnly)),status=document.getElementById('copyStatus');
+ const text=coachSummary(sessionOnly),status=document.getElementById('copyStatus');
  try{await navigator.clipboard.writeText(text);status.textContent='تم النسخ. الصق الملخص في محادثتك مع ChatGPT.';}catch{status.textContent='تعذر النسخ التلقائي. انسخ النص التالي يدوياً.';let box=document.getElementById('manualSummary');if(!box){box=document.createElement('textarea');box.id='manualSummary';box.readOnly=true;box.style.width='100%';status.after(box);}box.value=text;box.focus();box.select();}
 }
 
@@ -119,3 +119,5 @@ async function prepareCardioPhoto(input){
  }catch(err){if(cardioPhotoJobs.get(date)===job&&active())document.getElementById('cardioPhotoStatus').textContent=err.message||'تعذر قراءة الصورة؛ جرّب صورة JPEG أو PNG';}
  finally{if(cardioPhotoJobs.get(date)===job){cardioPhotoJobs.delete(date);if(active())document.getElementById('trainingDetailsSave').disabled=false;}}
 }
+
+function coachSummary(sessionOnly=false){return tr(coachSummarySource(sessionOnly));}
