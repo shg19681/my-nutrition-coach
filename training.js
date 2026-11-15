@@ -87,7 +87,7 @@ function coachSummary(sessionOnly=false){
  return lines.join('\n');
 }
 async function copyCoachSummary(sessionOnly=false){
- const text=coachSummary(sessionOnly),status=document.getElementById('copyStatus');
+ const text=tr(coachSummary(sessionOnly)),status=document.getElementById('copyStatus');
  try{await navigator.clipboard.writeText(text);status.textContent='تم النسخ. الصق الملخص في محادثتك مع ChatGPT.';}catch{status.textContent='تعذر النسخ التلقائي. انسخ النص التالي يدوياً.';let box=document.getElementById('manualSummary');if(!box){box=document.createElement('textarea');box.id='manualSummary';box.readOnly=true;box.style.width='100%';status.after(box);}box.value=text;box.focus();box.select();}
 }
 
