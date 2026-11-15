@@ -9,6 +9,7 @@ const englishText={
  "الغذاء": "Meals",
  "تماريني": "Workouts",
  "القياسات": "Measurements",
+ "تحليلك اليومي": "Daily insights",
  "المدرب": "Coach",
  "الإعدادات": "Settings",
  "مدربي الغذائي": "My Nutrition Coach",

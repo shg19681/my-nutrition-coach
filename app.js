@@ -21,7 +21,7 @@ const save=()=>localStorage.setItem(KEY,JSON.stringify(state));const latest=()=>
 [{t:'الفطور',name:'يوم مفتوح مرن',detail:'اختر وجباتك بحرية واعتدال مع الحفاظ على البروتين',time:'10:00'},{t:'الغداء',name:'وجبة حسب اختيارك',detail:'مجبوس أو مشاوي أو وجبة تحبها',time:'14:30'},{t:'سناك',name:'سناك حسب اختيارك',detail:'فواكه أو حلوى بكمية معتدلة',time:'17:30'},{t:'العشاء',name:'عشاء حسب اختيارك',detail:'اختر ما يناسبك بدون تعويض أو تجويع',time:'20:30'}]
 ];
 // Meals are editable examples; exact calories/macros depend on ingredients, preparation, and raw/cooked weights.
-const items=[['dashboard','⌂','الرئيسية'],['weight','◉','الوزن'],['food','▤','الغذاء'],['training','◇','تماريني'],['measure','◫','القياسات'],['coach','✧','المدرب'],['settings','⚙','الإعدادات']];let page='dashboard';let selectedDay=state.day;
+const items=[['dashboard','⌂','الرئيسية'],['weight','◉','الوزن'],['food','▤','الغذاء'],['training','◇','تماريني'],['insights','▤','تحليلك اليومي'],['measure','◫','القياسات'],['coach','✧','المدرب'],['settings','⚙','الإعدادات']];let page='dashboard';let selectedDay=state.day;
 function nav(){document.getElementById('desktopNav').innerHTML=items.map(([id,ic,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')">${ic} &nbsp; ${n}</button>`).join('');document.getElementById('mobileNav').innerHTML=items.map(([id,ic,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')"><span>${ic}</span>${n}</button>`).join('')}
 function go(p){trainingPhoto='';page=p;nav();render();window.scrollTo(0,0)}
 function cardMetric(label,value,unit,hint){return `<div class="card"><div class="metric-label">${label}</div><div class="metric">${value} <small>${unit}</small></div><div class="hint">${hint}</div></div>`}
@@ -88,7 +88,7 @@ function settingsPage(){const p=state.profile;return `${languageSettings()}<div 
 </div>
 <div class="card"><h3>نسخة احتياطية</h3>
 <p class="subtle">تُزامَن الأوزان والقياسات والإعدادات والتمارين عند تسجيل الدخول والاتصال بالإنترنت. ويمكنك تصدير نسخة احتياطية من بياناتك.</p><div class="flex"><button class="button secondary" onclick="exportData()">تصدير البيانات</button><label class="button ghost" style="cursor:pointer">استيراد ملف <input type="file" accept="application/json" hidden onchange="importData(event)"></label></div></div><div class="card"><h3>الخصوصية والتنبيهات</h3><p class="subtle">لا تُرسل بياناتك إلى ChatGPT تلقائياً. انسخ الملخص أو شارك الصور بنفسك عند طلب المراجعة. لا توجد تنبيهات آلية في الخلفية.</p></div></div></div>`}
-function render(){document.getElementById('todayLabel').textContent=new Date().toLocaleDateString(appLocale(),{timeZone:'Asia/Kuwait',weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,training:trainingPage,coach:coachPage,settings:settingsPage})[page]();localizeUI();}
+function render(){document.getElementById('todayLabel').textContent=new Date().toLocaleDateString(appLocale(),{timeZone:'Asia/Kuwait',weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,training:trainingPage,insights:insightsPage,coach:coachPage,settings:settingsPage})[page]();localizeUI();}
 
 async function addWeight(e) {
   e.preventDefault();
