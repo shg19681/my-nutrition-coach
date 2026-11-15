@@ -674,6 +674,7 @@ async function writeCloudSettings() {
         training: state.training || {},
         mealWeeks: state.mealWeeks || {},
         mealDone: state.mealDone || {},
+        mealSwaps: state.mealSwaps || {},
         profile: state.profile,
         day: state.day,
         openDay: state.openDay,
@@ -704,11 +705,11 @@ async function loadCloudSettings(userId) {
     return;
   }
 
-  if (!data?.settings) {cloudSettingsExtras={};state.training={};state.mealWeeks={};state.mealDone={};return;}
+  if (!data?.settings) {cloudSettingsExtras={};state.training={};state.mealWeeks={};state.mealDone={};state.mealSwaps={};return;}
 
   const s = data.settings;
   cloudSettingsExtras=s;
-  state.mealWeeks=s.mealWeeks||{};state.mealDone=s.mealDone||{};
+  state.mealWeeks=s.mealWeeks||{};state.mealDone=s.mealDone||{};state.mealSwaps=s.mealSwaps||{};
   state.training = s.training && typeof s.training === "object" ? s.training : {};
 
   if (s.profile) {
