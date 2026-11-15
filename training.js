@@ -96,12 +96,12 @@ function cardioDescription(s){return s.cardio>0?'الكارديو: '+(s.cardioTy
 function cardioPhotoImage(photo){return /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo||'')?`<img class="exercisePhoto" alt="صورة جهاز الكارديو" src="${photo}">`:'';}
 function cardioPhotoPicker(date,s){
  const photo=cardioPhotoDrafts.has(date)?cardioPhotoDrafts.get(date):s.cardioPhoto;
- return `<div class="field full"><label for="cardioCamera">تصوير جهاز الكارديو (اختياري)</label><input id="cardioCamera" type="file" accept="image/*" capture="environment" onchange="prepareCardioPhoto(this)"><label for="cardioPhotoFile">أو اختيار صورة من الصور</label><input id="cardioPhotoFile" type="file" accept="image/*" onchange="prepareCardioPhoto(this)"><div id="cardioPhotoStatus" class="hint">${cardioPhotoJobs.has(date)?'جاري تجهيز الصورة…':''}</div><div id="cardioPhotoPreview">${cardioPhotoImage(photo)}</div><button id="removeCardioPhoto" type="button" class="button ghost" onclick="removeCardioPhoto()" ${photo?'':'hidden'}>إزالة صورة الكارديو</button><p class="hint">تُحفظ الصورة مع تفاصيل الجلسة عند الضغط على «حفظ تفاصيل الجلسة». التصوير المباشر يعتمد على دعم جهازك ومتصفحك.</p></div>`;
+ return `<div class="field full"><label for="cardioPhotoFile">صورة الجهاز (اختيارية)</label><input id="cardioPhotoFile" type="file" accept="image/*" onchange="prepareCardioPhoto(this)"><div id="cardioPhotoStatus" class="hint">${cardioPhotoJobs.has(date)?'جاري تجهيز الصورة…':''}</div><div id="cardioPhotoPreview">${cardioPhotoImage(photo)}</div><button id="removeCardioPhoto" type="button" class="button ghost" onclick="removeCardioPhoto()" ${photo?'':'hidden'}>إزالة صورة الكارديو</button><p class="hint">تُحفظ الصورة مع تفاصيل الجلسة عند الضغط على «حفظ تفاصيل الجلسة». التصوير المباشر يعتمد على دعم جهازك ومتصفحك.</p></div>`;
 }
 function removeCardioPhoto(){
  const date=trainingDate||dateNow();cardioPhotoJobs.delete(date);cardioPhotoDrafts.set(date,'');
  document.getElementById('cardioPhotoPreview').innerHTML='';document.getElementById('cardioPhotoStatus').textContent='اضغط حفظ تفاصيل الجلسة لتأكيد إزالة الصورة';document.getElementById('removeCardioPhoto').hidden=true;document.getElementById('trainingDetailsSave').disabled=false;
- document.getElementById('cardioCamera').value='';document.getElementById('cardioPhotoFile').value='';
+ document.getElementById('cardioPhotoFile').value='';
 }
 async function prepareCardioPhoto(input){
  const file=input.files?.[0];if(!file)return;
