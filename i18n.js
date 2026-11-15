@@ -307,6 +307,8 @@ const englishText={
  "احفظ أي تعديلات أولاً، ثم اضغط الزر لتحميل أحدث نسخة بدون إغلاق التطبيق. يحتاج اتصالاً بالإنترنت.": "Save any changes first, then press the button to load the latest version without closing the app. An internet connection is required.",
  "أنت غير متصل بالإنترنت. اتصل ثم جرّب التحديث.": "You are offline. Connect to the internet and try again.",
  "سيُعاد تحميل التطبيق. التعديلات غير المحفوظة ستضيع. هل حفظت تعديلاتك وتريد المتابعة؟": "The app will reload. Unsaved changes will be lost. Have you saved your changes and want to continue?",
+ "حفظت تعديلاتي، حدّث الآن": "I saved my changes, refresh now",
+ "إلغاء": "Cancel",
  "الفطور": "Breakfast",
  "الغداء": "Lunch",
  "السناك": "Snack",
