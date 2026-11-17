@@ -55,9 +55,9 @@ async function persistTraining(){
 }
 async function setTrainingStatus(status){
  const date=trainingDate||dateNow(),old=sessionFor(date);
- if(status==='rest' && (old.exercises.length || old.cardio>0 || old.minutes>0 || old.cardioPhoto) && !confirm('تحويل اليوم إلى راحة يحذف تمارين وكارديو هذا اليوم. تبي تكمل؟'))return;
+ if(status==='rest' && (old.exercises.length || old.cardio>0 || cardioActivitiesFor(old).length || old.minutes>0 || old.cardioPhoto) && !confirm('تحويل اليوم إلى راحة يحذف تمارين وكارديو هذا اليوم. تبي تكمل؟'))return;
  if(status==='rest'){cardioPhotoJobs.delete(date);cardioPhotoDrafts.delete(date);}
- state.training||={};state.training[date]=status==='rest'?{status,groups:[],exercises:[],minutes:0,cardio:0,pain:false}:{...old,status};
+ state.training||={};state.training[date]=status==='rest'?{status,groups:[],exercises:[],minutes:0,cardio:0,cardioActivities:[],pain:false}:{...old,status};
  await persistTraining();render();
 }
 async function saveTrainingDetails(e,finish=false){
