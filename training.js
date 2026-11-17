@@ -121,7 +121,7 @@ async function copyCoachSummary(sessionOnly=false){
  try{await navigator.clipboard.writeText(text);status.textContent='تم النسخ. الصق الملخص في محادثتك مع ChatGPT.';}catch{status.textContent='تعذر النسخ التلقائي. انسخ النص التالي يدوياً.';let box=document.getElementById('manualSummary');if(!box){box=document.createElement('textarea');box.id='manualSummary';box.readOnly=true;box.style.width='100%';status.after(box);}box.value=text;box.focus();box.select();}
 }
 
-function cardioDescription(s){const activities=cardioActivitiesFor(s);return activities.length?'الكارديو: '+activities.map(a=>`${tr(a.type)} • ${fmt(a.minutes)} دقيقة${a.distance?' • '+fmt(a.distance)+' كم':''}${a.intensity?' • '+tr(a.intensity):''}`).join('؛ ')+' • المجموع '+fmt(activities.reduce((n,a)=>n+a.minutes,0))+' دقيقة':'لم تسجّل كارديو لهذا اليوم';}
+function cardioDescription(s){const activities=cardioActivitiesFor(s);return activities.length?tr('الكارديو')+': '+activities.map(a=>`${tr(a.type)} • ${fmt(a.minutes)} ${tr('دقيقة')}${a.distance?' • '+fmt(a.distance)+' كم':''}${a.intensity?' • '+tr(a.intensity):''}`).join('؛ ')+' • '+tr('المجموع')+' '+fmt(activities.reduce((n,a)=>n+a.minutes,0))+' '+tr('دقيقة'):tr('لم تسجّل كارديو لهذا اليوم');}
 
 function cardioPhotoImage(photo){return /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo||'')?`<img class="exercisePhoto" alt="صورة جهاز الكارديو" src="${photo}">`:'';}
 function cardioPhotoPicker(date,s){

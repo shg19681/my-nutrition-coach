@@ -63,6 +63,7 @@ const englishText={
  "سجّل كل نشاط ووقته بشكل منفصل؛ مجموع الدقائق يظهر في ملخص اليوم.": "Log each activity and its duration separately; total minutes appear in the daily summary.",
  "المدة بالدقائق": "Duration (minutes)",
  "إزالة": "Remove",
+ "المجموع": "Total",
  "مراجعة الأسبوع المكتمل": "Completed week review",
  "تقدم التمارين": "Exercise progression",
  "تغيّر القياسات": "Body measurement changes",
