@@ -88,7 +88,7 @@ function settingsPage(){const p=state.profile;return `${languageSettings()}<div 
 </div>
 <div class="card"><h3>نسخة احتياطية</h3>
 <p class="subtle">تُزامَن الأوزان والقياسات والإعدادات والتمارين عند تسجيل الدخول والاتصال بالإنترنت. ويمكنك تصدير نسخة احتياطية من بياناتك.</p><div class="flex"><button class="button secondary" onclick="exportData()">تصدير البيانات</button><label class="button ghost" style="cursor:pointer">استيراد ملف <input type="file" accept="application/json" hidden onchange="importData(event)"></label></div></div><div class="card"><h3>الخصوصية والتنبيهات</h3><p class="subtle">لا تُرسل بياناتك إلى ChatGPT تلقائياً. انسخ الملخص أو شارك الصور بنفسك عند طلب المراجعة. لا توجد تنبيهات آلية في الخلفية.</p></div></div></div>`}
-function render(){document.getElementById('todayLabel').textContent=new Date().toLocaleDateString(appLocale(),{timeZone:'Asia/Kuwait',weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,training:trainingPage,insights:insightsPage,coach:coachPage,settings:settingsPage})[page]();localizeUI();}
+function render(){document.getElementById('todayLabel').textContent=new Date().toLocaleDateString(appLocale(),{timeZone:'Asia/Kuwait',weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,training:trainingPage,insights:insightsPage,coach:coachPage,settings:settingsPage})[page]();localizeUI();hydrateTrainingPhotoImages?.();}
 
 async function addWeight(e) {
   e.preventDefault();
@@ -724,6 +724,7 @@ async function loadCloudSettings(userId) {
 
   selectedDay = state.day;
   save();
+  if(typeof migrateLegacyTrainingPhotos==='function')await migrateLegacyTrainingPhotos();
 }
 
 function refreshApp(confirmed=false){

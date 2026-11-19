@@ -2,7 +2,42 @@
 const muscleGroups=['صدر','ظهر','أرجل','أكتاف','باي','تراي','بطن','لياقة'];
 const cardioTypes=['مشي','مشي على السير','جري','دراجة','غزالة','إليبتيكال','درج','سباحة','تجديف','أخرى'];
 const cardioPhotoDrafts=new Map(),cardioPhotoJobs=new Map();
-let trainingDate=null, trainingPhoto='', trainingBusy=false,restTimerHandle=null,restTimerEnd=0,trainingExpandedDate=null;
+const TRAINING_PHOTO_BUCKET='training-photos',trainingPhotoUrlCache=new Map();
+let trainingDate=null, trainingPhoto='', trainingBusy=false,restTimerHandle=null,restTimerEnd=0,trainingExpandedDate=null,trainingPhotoMigration=null;
+function trainingPhotoPath(photo){return typeof photo==='string'&&photo.startsWith('storage://')?photo.slice('storage://'.length):'';}
+function isTrainingPhotoData(photo){return /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo||'');}
+async function uploadTrainingPhoto(dataUrl,date){
+ if(!isTrainingPhotoData(dataUrl))return dataUrl||'';
+ const {data:{user},error:userError}=await supabaseClient.auth.getUser();if(userError||!user)throw Error('سجّل دخولك أولاً لحفظ الصورة');
+ const path=`${user.id}/${date}/${crypto.randomUUID()}.jpg`,blob=await (await fetch(dataUrl)).blob();
+ const {error}=await supabaseClient.storage.from(TRAINING_PHOTO_BUCKET).upload(path,blob,{contentType:'image/jpeg',upsert:false});
+ if(error)throw Error(error.message.includes('Bucket not found')?'تخزين الصور لم يجهز بعد؛ جرّب بعد اكتمال إعداد المساحة.':'تعذر رفع الصورة: '+error.message);
+ return `storage://${path}`;
+}
+async function deleteTrainingPhoto(photo){
+ const path=trainingPhotoPath(photo);if(!path)return;
+ const {data:{user}}=await supabaseClient.auth.getUser();if(!user||!path.startsWith(`${user.id}/`))return;
+ const {error}=await supabaseClient.storage.from(TRAINING_PHOTO_BUCKET).remove([path]);if(error)console.warn('Could not remove training photo:',error.message);
+ trainingPhotoUrlCache.delete(path);
+}
+async function signedTrainingPhotoUrl(path){
+ const cached=trainingPhotoUrlCache.get(path);if(cached&&cached.expires>Date.now()+60000)return cached.url;
+ const {data,error}=await supabaseClient.storage.from(TRAINING_PHOTO_BUCKET).createSignedUrl(path,3600);
+ if(error)throw error;trainingPhotoUrlCache.set(path,{url:data.signedUrl,expires:Date.now()+3500000});return data.signedUrl;
+}
+async function hydrateTrainingPhotoImages(){
+ const imgs=[...document.querySelectorAll('img[data-training-photo-path]')];await Promise.all(imgs.map(async img=>{const path=img.dataset.trainingPhotoPath;if(!path)return;try{img.src=await signedTrainingPhotoUrl(path);if(img.isConnected&&img.dataset.trainingPhotoPath===path)img.hidden=false;}catch(err){console.warn('Could not load training photo:',err.message);}}));
+}
+async function migrateLegacyTrainingPhotos(){
+ if(trainingPhotoMigration)return trainingPhotoMigration;
+ trainingPhotoMigration=(async()=>{
+ let changed=false;for(const [date,s] of Object.entries(state.training||{})){
+  if(isTrainingPhotoData(s.cardioPhoto)){try{s.cardioPhoto=await uploadTrainingPhoto(s.cardioPhoto,date);changed=true;}catch(err){console.warn('Legacy cardio photo migration paused:',err.message);}}
+  for(const x of s.exercises||[])if(isTrainingPhotoData(x.photo)){try{x.photo=await uploadTrainingPhoto(x.photo,date);changed=true;}catch(err){console.warn('Legacy exercise photo migration paused:',err.message);}}
+ }
+ if(changed){save();await saveCloudSettings();}
+ })();try{await trainingPhotoMigration;}finally{trainingPhotoMigration=null;}
+}
 function sessionFor(date){return state.training?.[date] || {status:'unlogged',groups:[],exercises:[],minutes:0,cardio:0,pain:false};}
 function cardioActivitiesFor(s){
  if(Array.isArray(s.cardioActivities))return s.cardioActivities.filter(a=>a&&a.type);
@@ -47,7 +82,8 @@ async function deleteTrainingRoutine(id){if(!confirm('حذف هذا الروتي
 function exerciseCard(x,i,date){
  const prev=Object.entries(state.training||{}).filter(([d])=>d<date).sort(([a],[b])=>b.localeCompare(a)).flatMap(([,s])=>s.exercises).find(e=>e.name.trim()===x.name.trim()&&e.group===x.group);
  const delta=prev?x.weight-prev.weight:null,comparison=prev?`${delta>0?'زادت الأوزان ':delta<0?'انخفض الوزن ':'نفس الوزن '} ${delta===0?'':(delta>0?'+':'')+fmt(delta)+' كجم'} عن آخر تمرين؛ ${fmt(prev.weight)} كجم × ${fmt(prev.reps)} × ${fmt(prev.sets)} جولة.`:'';
- return `<div class="meal"><div><strong>${safe(x.name)} • ${safe(x.group)}</strong><small>${fmt(x.weight)} كجم × ${fmt(x.reps)} تكرار × ${fmt(x.sets)} جولة${prev?`<br>آخر مرة: ${safe(comparison)} قارن نفس الجهاز وطريقة الأداء.`:''}</small>${/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(x.photo||'')?`<img class="exercisePhoto" alt="صورة الجهاز المسجلة" src="${x.photo}">`:''}<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(x.name+' شرح الأداء الصحيح')}" target="_blank" rel="noopener">ابحث عن شرح فيديو للتمرين</a><small>نتائج بحث، وليست فيديوهات مختارة أو مراجعة من المدرب.</small></div><button class="button ghost" onclick="deleteExercise(${i})">حذف</button></div>`;
+ const photoPath=trainingPhotoPath(x.photo),photo=isTrainingPhotoData(x.photo)?`<img class="exercisePhoto" alt="صورة الجهاز المسجلة" src="${x.photo}">`:photoPath?`<img class="exercisePhoto" alt="صورة الجهاز المسجلة" data-training-photo-path="${safe(photoPath)}" hidden>`:'';
+ return `<div class="meal"><div><strong>${safe(x.name)} • ${safe(x.group)}</strong><small>${fmt(x.weight)} كجم × ${fmt(x.reps)} تكرار × ${fmt(x.sets)} جولة${prev?`<br>آخر مرة: ${safe(comparison)} قارن نفس الجهاز وطريقة الأداء.`:''}</small>${photo}<a href="https://www.youtube.com/results?search_query=${encodeURIComponent(x.name+' شرح الأداء الصحيح')}" target="_blank" rel="noopener">ابحث عن شرح فيديو للتمرين</a><small>نتائج بحث، وليست فيديوهات مختارة أو مراجعة من المدرب.</small></div><div class="flex"><button class="button ghost" onclick="removeExercisePhoto(${i})" ${x.photo?'':'hidden'}>إزالة الصورة</button><button class="button ghost" onclick="deleteExercise(${i})">حذف</button></div></div>`;
 }
 async function persistTraining(){
  try{save();}catch{alert('مساحة الجهاز ممتلئة. احذف صورة غير لازمة أو صدّر نسخة احتياطية. لم يكتمل الحفظ.');return false;}
@@ -63,16 +99,18 @@ async function setTrainingStatus(status){
 async function saveTrainingDetails(e,finish=false){
  e.preventDefault();const f=new FormData(e.target),date=trainingDate||dateNow();const s=sessionFor(date);
  if(cardioPhotoJobs.has(date))return alert('انتظر تجهيز صورة الكارديو');
- const cardioPhoto=cardioPhotoDrafts.has(date)?cardioPhotoDrafts.get(date):(s.cardioPhoto||'');
- if(JSON.stringify(state.training||{}).length-(s.cardioPhoto||'').length+cardioPhoto.length>2500000)return alert('مساحة الصور ممتلئة؛ احذف صورة غير لازمة بعد حفظ نسخة احتياطية.');
+ let cardioPhoto=cardioPhotoDrafts.has(date)?cardioPhotoDrafts.get(date):(s.cardioPhoto||'');
  const cardioTypesInput=f.getAll('cardioType').map(String),cardioMinutesInput=f.getAll('cardio').map(x=>String(x||'')),cardioDistanceInput=f.getAll('cardioDistance').map(x=>String(x||'')),cardioIntensityInput=f.getAll('cardioIntensity').map(String);
  const cardioActivities=[];let cardioInvalid=false;for(let i=0;i<cardioTypesInput.length;i++){const type=cardioTypesInput[i],rawMinutes=cardioMinutesInput[i],rawDistance=cardioDistanceInput[i],intensity=cardioIntensityInput[i],minutes=Number(rawMinutes)||0,distance=Number(rawDistance)||0;const touched=Boolean(type||rawMinutes||rawDistance||intensity);if(!touched)continue;if(!cardioTypes.includes(type)||!Number.isFinite(minutes)||minutes<=0||minutes>300||!Number.isFinite(distance)||distance<0||distance>500){cardioInvalid=true;break;}cardioActivities.push({type,minutes,distance,intensity});}
  if(cardioInvalid)return alert('لكل نشاط كارديو تختاره، أدخل المدة وراجع المسافة');
  const cardio=cardioActivities.reduce((n,a)=>n+a.minutes,0),cardioType=cardioActivities.map(a=>a.type).join('، '),cardioDistance=cardioActivities.reduce((n,a)=>n+a.distance,0),cardioIntensity=cardioActivities.map(a=>a.intensity).filter(Boolean).join('، ');
  const groups=f.getAll('group');for(const x of s.exercises)if(!groups.includes(x.group))groups.push(x.group);
  const weight=[...state.weights].filter(w=>w.date<=date).sort((a,b)=>b.date.localeCompare(a.date))[0]?.weight;
+ const previousPhoto=s.cardioPhoto||'';
+ try{if(isTrainingPhotoData(cardioPhoto))cardioPhoto=await uploadTrainingPhoto(cardioPhoto,date);}catch(err){return alert(err.message||'تعذر حفظ صورة الكارديو');}
  state.training[date]={...s,groups,minutes:Number(f.get('minutes')),cardio,cardioActivities,cardioType,cardioDistance,cardioIntensity,cardioPhoto,pain:f.has('pain'),bodyWeight:weight||null,completed:finish};
  const saved=await persistTraining();if(saved){cardioPhotoDrafts.delete(date);if(finish)trainingExpandedDate=null;}render();
+ if(saved&&previousPhoto&&previousPhoto!==cardioPhoto)await deleteTrainingPhoto(previousPhoto);
 }
 function finishTraining(date){const form=document.querySelector('#view form[onsubmit="saveTrainingDetails(event)"]');if(!form||!form.reportValidity())return;saveTrainingDetails({preventDefault(){},target:form},true);}
 async function reopenTraining(date){const s=sessionFor(date);s.completed=false;state.training[date]=s;await persistTraining();render();}
@@ -95,12 +133,12 @@ async function addExercise(e){
  const f=new FormData(e.target),date=trainingDate||dateNow(),s=sessionFor(date);
  const x={name:String(f.get('name')).trim(),group:String(f.get('group')),weight:Number(f.get('weight')),sets:Number(f.get('sets')),reps:Number(f.get('reps')),photo:trainingPhoto};
  if(!x.name||!muscleGroups.includes(x.group)||!Number.isFinite(x.weight)||x.weight<0||x.weight>1000||!Number.isInteger(x.sets)||x.sets<1||x.sets>30||!Number.isInteger(x.reps)||x.reps<1||x.reps>200)return alert('راجع اسم التمرين والأوزان والجولات والتكرارات');
- const photoBytes=JSON.stringify(state.training||{}).length+x.photo.length;
- if(photoBytes>2500000)return alert('سجل الصور وصل للحد المتاح؛ أضف التمرين دون صورة أو احذف صورة قديمة بعد تصدير نسخة احتياطية.');
+ try{if(isTrainingPhotoData(x.photo))x.photo=await uploadTrainingPhoto(x.photo,date);}catch(err){return alert(err.message||'تعذر حفظ صورة التمرين');}
  s.exercises.push(x);s.status='trained';s.completed=false;if(!s.groups.includes(x.group))s.groups.push(x.group);state.training||={};state.training[date]=s;
- trainingPhoto='';await persistTraining();render();
+ trainingPhoto='';const saved=await persistTraining();if(!saved&&trainingPhotoPath(x.photo))await deleteTrainingPhoto(x.photo);render();
 }
-async function deleteExercise(i){if(!confirm('حذف مجموعة الجولات هذه؟'))return;const s=sessionFor(trainingDate||dateNow());s.exercises.splice(i,1);s.completed=false;await persistTraining();render();}
+async function removeExercisePhoto(i){const s=sessionFor(trainingDate||dateNow()),x=s.exercises[i];if(!x?.photo||!confirm('إزالة صورة الجهاز؟ سيبقى التمرين وأوزانه محفوظة.'))return;const old=x.photo;x.photo='';s.completed=false;const saved=await persistTraining();if(saved)await deleteTrainingPhoto(old);render();}
+async function deleteExercise(i){if(!confirm('حذف مجموعة الجولات هذه؟'))return;const s=sessionFor(trainingDate||dateNow()),old=s.exercises[i]?.photo;s.exercises.splice(i,1);s.completed=false;const saved=await persistTraining();if(saved)await deleteTrainingPhoto(old);render();}
 function chefMessage(){
  const d=state.openDay,ar=d?`اليوم ${d} من الجدول يوم مفتوح كامل. لا تحضّر وجبات النظام لهذا اليوم إلا بطلب منفصل.`:'تم إلغاء اختيار اليوم المفتوح. يرجى مراجعة صاحب الجدول قبل تحضير وجبات اليوم السابع.';
  const en=d?`Day ${d} of the plan is a full open day. Do not prepare diet meals for this day unless separately requested.`:'The open-day selection has been cancelled. Please confirm day-seven meals with the plan owner.';
@@ -123,7 +161,7 @@ async function copyCoachSummary(sessionOnly=false){
 
 function cardioDescription(s){const activities=cardioActivitiesFor(s);return activities.length?tr('الكارديو')+': '+activities.map(a=>`${tr(a.type)} • ${fmt(a.minutes)} ${tr('دقيقة')}${a.distance?' • '+fmt(a.distance)+' كم':''}${a.intensity?' • '+tr(a.intensity):''}`).join('؛ ')+' • '+tr('المجموع')+' '+fmt(activities.reduce((n,a)=>n+a.minutes,0))+' '+tr('دقيقة'):tr('لم تسجّل كارديو لهذا اليوم');}
 
-function cardioPhotoImage(photo){return /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(photo||'')?`<img class="exercisePhoto" alt="صورة جهاز الكارديو" src="${photo}">`:'';}
+function cardioPhotoImage(photo){const path=trainingPhotoPath(photo);return isTrainingPhotoData(photo)?`<img class="exercisePhoto" alt="صورة جهاز الكارديو" src="${photo}">`:path?`<img class="exercisePhoto" alt="صورة جهاز الكارديو" data-training-photo-path="${safe(path)}" hidden>`:'';}
 function cardioPhotoPicker(date,s){
  const photo=cardioPhotoDrafts.has(date)?cardioPhotoDrafts.get(date):s.cardioPhoto;
  return `<div class="field full"><label for="cardioPhotoFile">صورة الجهاز (اختيارية)</label><input id="cardioPhotoFile" type="file" accept="image/*" onchange="prepareCardioPhoto(this)"><div id="cardioPhotoStatus" class="hint">${cardioPhotoJobs.has(date)?'جاري تجهيز الصورة…':''}</div><div id="cardioPhotoPreview">${cardioPhotoImage(photo)}</div><button id="removeCardioPhoto" type="button" class="button ghost" onclick="removeCardioPhoto()" ${photo?'':'hidden'}>إزالة صورة الكارديو</button><p class="hint">تُحفظ الصورة مع تفاصيل الجلسة عند الضغط على «حفظ تفاصيل الجلسة». التصوير المباشر يعتمد على دعم جهازك ومتصفحك.</p></div>`;
