@@ -113,7 +113,18 @@ function insightWeeklyCard(){
  let weightAdvice,loss=null;
  const previousSaturday=insightSaturdayEntries(w.previousSaturday).weight;
  const hasAverages=current.readings.length>=2&&previous.readings.length>=2;
- if(!hasAverages&&!previousSaturday)weightAdvice=insightCopy(`ما فيه وزن السبت السابق ولا قراءات كافية لحساب متوسطين. سجّل وزنك لمقارنة الأسبوع القادم.`,`There is no prior Saturday weigh-in or enough readings to compare averages. Log your weight for next week’s comparison.`);
+ const earlierReading=[...previous.readings].sort((a,b)=>b.date.localeCompare(a.date))[0];
+ if(!hasAverages&&!previousSaturday){
+  const currentValue=Number(saturday.weight.weight);
+  const currentAverage=current.average;
+  const summary=insightCopy(`سجلت ${fmt(current.readings.length)} قراءة من ${safe(w.weightStart)} إلى ${safe(w.saturday)}. متوسط هالأسبوع ${fmt(currentAverage)} كجم. وزن السبت ${fmt(currentValue)} كجم.`,`You logged ${fmt(current.readings.length)} readings from ${safe(w.weightStart)} to ${safe(w.saturday)}. This week’s average is ${fmt(currentAverage)} kg. Saturday’s weight is ${fmt(currentValue)} kg.`);
+  if(earlierReading){
+   const difference=Number((currentValue-Number(earlierReading.weight)).toFixed(1));
+   const signed=(difference>0?'+':'')+fmt(difference);
+   weightAdvice=summary+' '+insightCopy(`مقارنة بآخر قراءة من الفترة السابقة (${safe(earlierReading.date)}، ${fmt(earlierReading.weight)} كجم)، الفرق ${signed} كجم بين القراءتين. هذي مقارنة تقريبية، فما نقترح تخفيض أكلك بناءً عليها.`,`Compared with the last reading from the prior period (${safe(earlierReading.date)}, ${fmt(earlierReading.weight)} kg), the difference is ${signed} kg between readings. This is a rough comparison, so it does not justify cutting food intake.`);
+  }else weightAdvice=summary+' '+insightCopy('الفترة السابقة ما فيها وزن محفوظ للمقارنة.','There is no saved weight in the previous period for comparison.');
+ }
+
  else{
   loss=Number((hasAverages?previous.average-current.average:Number(previousSaturday.weight)-Number(saturday.weight.weight)).toFixed(3));const trend=`${(hasAverages?insightCopy('متوسط الوزن','Average weight'):insightCopy('وزن السبت (قراءتان فقط للمقارنة)','Saturday weight (two point readings)'))}: ${fmt(hasAverages?current.average:Number(saturday.weight.weight))} ${insightCopy('كجم؛ الفرق عن الفترة السابقة','kg; change from the previous period')}: ${loss>0?'-':'+'}${fmt(Math.abs(loss))} ${insightCopy('كجم.','kg.')}`;
   if(loss>=0.8&&loss<=1)weightAdvice=`${trend} ${insightCopy('قريب من هدفك الأسبوعي؛ إذا طاقتك وتعافيك زينين، استمر على نفس المقاومة والكارديو.','Close to your weekly goal; if energy and recovery are good, keep resistance and cardio steady.')}`;
