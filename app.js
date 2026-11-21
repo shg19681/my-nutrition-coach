@@ -1,29 +1,13 @@
 const KEY='my-coach-v1';const dateNow=()=>new Date().toLocaleDateString('en-CA',{timeZone:'Asia/Kuwait'});const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const initial={profile:{age:45,height:177,goalWeight:90,calories:2150,protein:180,trainingDays:4,trainingTime:'07:00',firstMeal:'10:00'},weights:[{date:'2026-11-08',weight:99.4}],measurements:[],day:2,openDay:7,done:{},water:{},chat:[],provider:'chatgpt',notes:[],startDate:'2026-11-08'};
-let state;try{state={...initial,...JSON.parse(localStorage.getItem(KEY)||'{}')}}catch{state=structuredClone(initial)};
-// One-time migration for the previously published demo plan; preserve all logged measurements and weights.
-if(!state.planVersion || state.planVersion<2){
-  const wasDemo=state.startDate==='2026-11-09' || !state.startDate;
-  state.startDate='2026-11-08';
-  if(wasDemo && state.day===1 && !Object.keys(state.done||{}).length)state.day=2;
-  state.openDay=state.openDay??7;
-  state.planVersion=2;
-  localStorage.setItem(KEY,JSON.stringify(state));
-}
-state.provider='chatgpt';
-const save=()=>localStorage.setItem(KEY,JSON.stringify(state));const latest=()=>[...state.weights].sort((a,b)=>a.date.localeCompare(b.date)).at(-1);const fmt=x=>Number(x).toLocaleString(appLocale(),{maximumFractionDigits:1});const days=[
-[{t:'الفطور',name:'بيض وجبن قريش وفراولة',detail:'بيضتان كاملتان + 200 غ بياض بيض + 25 غ جبن فيتا + 40 غ خبز أسمر + 150 غ فراولة + 5 غ زيت زيتون',time:'10:00'},{t:'الغداء',name:'صدر دجاج ورز بسمتي',detail:'200 غ صدر دجاج مشوي + 150 غ رز بسمتي مطبوخ + 200 غ سلطة + 5 غ زيت زيتون',time:'14:30'},{t:'سناك',name:'زبادي يوناني وتمر وتفاح',detail:'200 غ زبادي يوناني عالي البروتين + تمرتان صغيرتان + 150 غ تفاح',time:'17:30'},{t:'العشاء',name:'ستيك لحم وبطاطا',detail:'170 غ ستيك لحم قليل الدهون + 180 غ بطاطا بالفرن + 200 غ خضار',time:'20:30'}],
-[{t:'الفطور',name:'لحم مفروم وبيض',detail:'120 غ لحم مفروم قليل الدهون + بيضتان كاملتان + 100 غ طماطم + 40 غ خبز أسمر + 100 غ فراولة',time:'10:00'},{t:'الغداء',name:'كباب كوبيده ورز',detail:'200 غ كباب كوبيده + 120 غ رز مطبوخ + طماطم مشوية + سلطة',time:'14:30'},{t:'سناك',name:'جبن قريش وخيار وتفاح',detail:'200 غ جبن قريش + 100 غ خيار + تفاحة صغيرة',time:'17:30'},{t:'العشاء',name:'هامور مشوي وبطاطا',detail:'250 غ هامور مشوي + 200 غ خضار + 150 غ بطاطا',time:'20:30'}],
-[{t:'الفطور',name:'بيض وحلوم قليل الدسم',detail:'بيضتان مسلوقتان + 150 غ بياض بيض + 40 غ جبن حلوم قليل الدسم + 150 غ خيار وطماطم + موزة صغيرة',time:'10:00'},{t:'الغداء',name:'دجاج ومجبوس',detail:'220 غ دجاج بدون جلد + 150 غ رز مجبوس مطبوخ + 30 غ دقوس + سلطة',time:'14:30'},{t:'سناك',name:'زبادي وفراولة ولوز',detail:'200 غ زبادي يوناني + 150 غ فراولة + 15 غ لوز',time:'17:30'},{t:'العشاء',name:'لحم غنم وكوسا',detail:'180 غ لحم غنم قليل الدهون بعد إزالة العظم + 200 غ كوسا مشوية + 100 غ رز مطبوخ',time:'20:30'}],
-[{t:'الفطور',name:'صدر دجاج وبيض وفطر',detail:'100 غ صدر دجاج مطبوخ + بيضتان كاملتان + 100 غ بياض بيض + 80 غ فطر + تفاحة صغيرة',time:'10:00'},{t:'الغداء',name:'جوجه كباب ورز زعفران',detail:'230 غ جوجه كباب + 150 غ رز زعفران مطبوخ + طماطم مشوية وسلطة',time:'14:30'},{t:'سناك',name:'تونة وخبز أسمر',detail:'120 غ تونة بالماء بعد التصفية + شريحة خبز أسمر 40 غ + 100 غ خيار',time:'17:30'},{t:'العشاء',name:'سلمون وبروكلي',detail:'200 غ سلمون مشوي + 200 غ بروكلي + 100 غ بطاطا',time:'20:30'}],
-[{t:'الفطور',name:'جبن قريش وبيض',detail:'200 غ جبن قريش + بيضتان كاملتان + 40 غ خبز أسمر + 100 غ طماطم + 100 غ فراولة',time:'10:00'},{t:'الغداء',name:'كباب لحم ورز',detail:'220 غ كباب لحم مشوي قليل الدهون + 130 غ رز مطبوخ + سلطة',time:'14:30'},{t:'سناك',name:'زبادي وموز وتمر',detail:'200 غ زبادي يوناني + موزة صغيرة + تمرتان',time:'17:30'},{t:'العشاء',name:'روبيان وبطاطا',detail:'250 غ روبيان + 200 غ خضار + 120 غ بطاطا',time:'20:30'}],
-[{t:'الفطور',name:'ستيك وبيض وفيتا',detail:'120 غ ستيك لحم + بيضتان كاملتان + 20 غ جبن فيتا + 100 غ طماطم + 100 غ تفاح',time:'10:00'},{t:'الغداء',name:'لحم عجل ورز زعفران',detail:'200 غ لحم عجل قليل الدهون + 150 غ رز زعفران مطبوخ + خضار مطبوخة',time:'14:30'},{t:'سناك',name:'جبن قريش وفراولة',detail:'200 غ جبن قريش + 150 غ فراولة + 10 غ مكسرات',time:'17:30'},{t:'العشاء',name:'كباب دجاج وحمص',detail:'200 غ كباب دجاج + 40 غ حمص + 200 غ سلطة + 100 غ بطاطا',time:'20:30'}],
-[{t:'الفطور',name:'يوم مفتوح مرن',detail:'اختر وجباتك بحرية واعتدال مع الحفاظ على البروتين',time:'10:00'},{t:'الغداء',name:'وجبة حسب اختيارك',detail:'مجبوس أو مشاوي أو وجبة تحبها',time:'14:30'},{t:'سناك',name:'سناك حسب اختيارك',detail:'فواكه أو حلوى بكمية معتدلة',time:'17:30'},{t:'العشاء',name:'عشاء حسب اختيارك',detail:'اختر ما يناسبك بدون تعويض أو تجويع',time:'20:30'}]
-];
-// Meals are editable examples; exact calories/macros depend on ingredients, preparation, and raw/cooked weights.
+const initial={profile:{age:null,height:null,goalWeight:null,calories:null,protein:null,trainingDays:null,trainingTime:'',firstMeal:''},weights:[],measurements:[],day:1,openDay:7,done:{},water:{},chat:[],provider:'chatgpt',notes:[]};
+let accountId=null, accountLoad=null, state=structuredClone(initial);
+function save(){if(accountId)localStorage.setItem(KEY+':'+accountId,JSON.stringify(state));}
+const latest=()=>[...state.weights].sort((a,b)=>a.date.localeCompare(b.date)).at(-1);
+const fmt=x=>Number(x).toLocaleString(appLocale(),{maximumFractionDigits:1});
+const days=[];
 const items=[['dashboard','⌂','الرئيسية'],['weight','◉','الوزن'],['food','▤','الغذاء'],['training','◇','تماريني'],['insights','▤','تحليلك اليومي'],['measure','◫','القياسات'],['coach','✧','المدرب'],['settings','⚙','الإعدادات']];let page='dashboard';let selectedDay=state.day;
-function nav(){document.getElementById('desktopNav').innerHTML=items.map(([id,ic,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')">${ic} &nbsp; ${n}</button>`).join('');document.getElementById('mobileNav').innerHTML=items.map(([id,ic,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')"><span>${ic}</span>${n}</button>`).join('')}
-function go(p){trainingPhoto='';page=p;nav();render();window.scrollTo(0,0)}
+function nav(){if(!accountId)return;document.getElementById('desktopNav').innerHTML=items.map(([id,ic,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')">${ic} &nbsp; ${n}</button>`).join('');document.getElementById('mobileNav').innerHTML=items.map(([id,ic,n])=>`<button class="${page===id?'active':''}" onclick="go('${id}')"><span>${ic}</span>${n}</button>`).join('')}
+function go(p){if(!accountId||accountLoad)return;trainingPhoto='';page=p;nav();render();window.scrollTo(0,0)}
 function cardMetric(label,value,unit,hint){return `<div class="card"><div class="metric-label">${label}</div><div class="metric">${value} <small>${unit}</small></div><div class="hint">${hint}</div></div>`}
 function chart(){const data=[...state.weights].sort((a,b)=>a.date.localeCompare(b.date)).slice(-12);if(data.length<2)return `<div class="empty">أضف وزن جديد عشان يطلع لك الرسم البياني للتقدم</div>`;const vals=data.map(x=>+x.weight);const min=Math.min(...vals)-.5,max=Math.max(...vals)+.5;const points=data.map((x,i)=>`${32+(i/(data.length-1))*440},${178-(x.weight-min)/(max-min)*145}`).join(' ');return `<svg class="chart" viewBox="0 0 500 205" preserveAspectRatio="none"><line x1="30" y1="32" x2="480" y2="32"/><line x1="30" y1="105" x2="480" y2="105"/><line x1="30" y1="178" x2="480" y2="178"/><polyline points="${points}"/><text x="30" y="195">${safe(data[0].date)}</text><text x="400" y="195">${safe(data.at(-1).date)}</text></svg>`}
 
@@ -71,11 +55,11 @@ const done = state.openDay === state.day
       (_, i) => state.done[sourceDay + '-' + i]
     ).length;
 return `<div class="card" style="margin-bottom:16px"><div class="rowbetween"><span>تمرين اليوم: ${sessionFor(dateNow()).status==='trained'?'تمرنت':sessionFor(dateNow()).status==='rest'?'راحة':'لم يُسجّل'}</span><button class="button secondary" onclick="go('training')">سجّل التمرين أو الراحة</button></div></div><section class="hero"><div><div class="tag">✦ رحلتك مستمرة</div><h2>هلا فيك، جاهز ليوم أقوى؟</h2><p>كل تسجيل صغير يقربك من هدفك.<br>اليوم ${state.day} من برنامجك الغذائي المتسلسل.</p></div><div class="round"><div><b>${state.day}/7</b>اليوم</div></div></section><div class="grid">${cardMetric('آخر وزن',fmt(w),'كجم','آخر تسجيل: '+safe(latest()?.date||'—'))}${cardMetric('الوزن المستهدف',fmt(state.profile.goalWeight),'كجم','تقدر تعدله بالإعدادات')}${cardMetric('التمارين',state.profile.trainingDays,'أيام/أسبوع','مقاومة + كارديو')}</div><div class="two" style="margin-top:18px"><div class="card"><div class="rowbetween"><h3>وجبات اليوم ${state.day}</h3><button class="button secondary" onclick="go('food')">الجدول كامل</button></div>${mealRows(state.day,true)}<div class="progress"><span style="width:${done*25}%"></span></div><div class="hint" style="margin-top:9px">أنجزت ${done} من 4 وجبات</div></div><div class="stack"><div class="card"><h3>تطور وزنك</h3>${chart()}<button class="button secondary" onclick="go('weight')">سجّل وزن اليوم</button></div><div class="card"><h3>هدفك اليومي المبدئي</h3><div class="rowbetween"><span>السعرات</span><b>${state.profile.calories} سعرة</b></div><div class="progress"><span style="width:65%"></span></div><p class="hint">هدف تخطيطي، مو استهلاك فعلي محسوب.</p><div class="rowbetween"><span>البروتين</span><b>${state.profile.protein} غ</b></div></div></div></div>`}
-function weightPage(){const arr=[...state.weights].sort((a,b)=>b.date.localeCompare(a.date));return `<div class="two"><div class="card"><h3>سجّل وزنك</h3><form onsubmit="addWeight(event)" class="formGrid"><div class="field"><label>التاريخ</label><input name="date" type="date" required value="${dateNow()}"></div><div class="field"><label>الوزن (كجم)</label><input name="weight" type="number" min="30" max="350" step="0.1" placeholder="99.4" required></div><div class="full"><button class="button">حفظ الوزن</button></div></form><p class="hint">الأفضل تقيس الصبح بعد الحمام وقبل الفطور وبنفس الميزان.</p></div><div class="card"><h3>منحنى الوزن</h3>${chart()}</div></div><div class="sectionHead"><h2>سجل الوزن</h2></div><div class="card"><table class="weightList"><thead><tr><th>التاريخ</th><th>الوزن</th><th></th></tr></thead><tbody>${arr.map(x=>`<tr><td>${safe(x.date)}</td><td>${fmt(x.weight)} كجم</td><td><button class="button ghost" onclick="deleteWeight('${safe(x.date)}')">حذف</button></td></tr>`).join('')}</tbody></table></div>`}
+function weightPage(){const arr=[...state.weights].sort((a,b)=>b.date.localeCompare(a.date));return `<div class="two"><div class="card"><h3>سجّل وزنك</h3><form onsubmit="addWeight(event)" class="formGrid"><div class="field"><label>التاريخ</label><input name="date" type="date" required value="${dateNow()}"></div><div class="field"><label>الوزن (كجم)</label><input name="weight" type="number" min="30" max="350" step="0.1" placeholder="مثال: 80" required></div><div class="full"><button class="button">حفظ الوزن</button></div></form><p class="hint">الأفضل تقيس الصبح بعد الحمام وقبل الفطور وبنفس الميزان.</p></div><div class="card"><h3>منحنى الوزن</h3>${chart()}</div></div><div class="sectionHead"><h2>سجل الوزن</h2></div><div class="card"><table class="weightList"><thead><tr><th>التاريخ</th><th>الوزن</th><th></th></tr></thead><tbody>${arr.map(x=>`<tr><td>${safe(x.date)}</td><td>${fmt(x.weight)} كجم</td><td><button class="button ghost" onclick="deleteWeight('${safe(x.date)}')">حذف</button></td></tr>`).join('')}</tbody></table></div>`}
 function legacyFoodPage(){return `<div class="card"><div class="rowbetween"><div><h3>برنامجك الغذائي المرن</h3><p class="subtle">أيام متسلسلة، مو مرتبطة بأيام الأسبوع. اضغط على أي يوم لعرض وجباته.</p></div><span class="tag">اليوم الحالي ${state.day}</span></div><div class="daytabs">${days.map((_,i)=>`<button class="${selectedDay===i+1?'active':''}" onclick="selectDay(${i+1})">اليوم ${i+1}${state.openDay===i+1?' ★':''}</button>`).join('')}</div><div class="sectionHead"><h2>وجبات اليوم ${selectedDay}</h2><button class="button ghost" onclick="openDay(${selectedDay})">${state.openDay===selectedDay?'إلغاء اليوم المفتوح':'اجعله اليوم المفتوح'}</button></div>${mealRows(selectedDay,true)}${chefSharePanel()}<div class="flex" style="margin-top:18px"><button class="button" onclick="advanceDay()">انتقل لليوم التالي ←</button><button class="button secondary" onclick="setCurrentDay(${selectedDay})">اعتمد هذا اليوم كالحالي</button></div></div><p class="notice" style="margin-top:14px">الوجبات من جدولك المصوّر. الأوزان المذكورة للدجاج واللحوم والأسماك والرز والبطاطا بعد الطبخ؛ الزيت بالغرام. السعرات والبروتين اليوميان في الإعدادات أهداف تقديرية وليسا حساباً مؤكداً لهذه الوجبات. اختر اليوم المفتوح بأي يوم يناسبك.</p>`}
 function measuresPage(){const arr=[...state.measurements].sort((a,b)=>b.date.localeCompare(a.date));return `<div class="two"><div class="card"><h3>أضف قياسات الجسم</h3><form onsubmit="addMeasures(event)" class="formGrid"><div class="field full"><label>التاريخ</label><input type="date" name="date" required value="${dateNow()}"></div>${[['waist','محيط البطن'],['chest','الصدر'],['hips','الحوض'],['arm','الذراع'],['thigh','الفخذ']].map(([n,l])=>`<div class="field"><label>${l} (سم)</label><input type="number" step="0.1" min="1" max="250" name="${n}" placeholder="اختياري"></div>`).join('')}<div class="full"><button class="button">حفظ القياسات</button></div></form></div><div class="card"><h3>آخر القياسات</h3>${arr.length?Object.entries(arr[0]).filter(([k])=>k!=='date').map(([k,v])=>`<div class="meal"><strong>${({waist:'البطن',chest:'الصدر',hips:'الحوض',arm:'الذراع',thigh:'الفخذ'})[k]}</strong><b>${fmt(v)} سم</b></div>`).join(''):'<div class="empty">ما سجلت قياسات للحين</div>'}</div></div><div class="sectionHead"><h2>سجل القياسات</h2></div><div class="card">${arr.length?arr.map(x=>`<div class="meal"><div><strong>${safe(x.date)}</strong><small>${Object.entries(x).filter(([k])=>k!=='date').map(([k,v])=>`${({waist:'البطن',chest:'الصدر',hips:'الحوض',arm:'الذراع',thigh:'الفخذ'})[k]}: ${fmt(v)} سم`).join(' · ')}</small></div><button class="button ghost" onclick="deleteMeasure('${safe(x.date)}')">حذف</button></div>`).join(''):'<div class="empty">سجّل قياساتك الأولى</div>'}</div>`}
 function coachPage(){return `<div class="card"><h3>راجع برنامجك مع ChatGPT</h3><p class="subtle">سجّل بياناتك هنا، ثم ارجع لمحادثتك واطلب مراجعة التطبيق. تقدر أيضاً تنسخ الملخص وتلصقه في ChatGPT. التحليل يتم في المحادثة ضمن حدود حسابك.</p><button class="button" onclick="copyCoachSummary()">نسخ ملخصي لـChatGPT</button><p id="copyStatus" class="hint" role="status"></p><div class="field"><label for="coachSummary">ملخص بياناتك للمراجعة</label><textarea id="coachSummary" readonly rows="14">${safe(coachSummary())}</textarea></div><p class="hint">الصور لا تدخل في النص المنسوخ؛ أرفق صور الأجهزة في المحادثة عند الحاجة. لا يتم إرسال بياناتك تلقائياً.</p></div>`}
-function settingsPage(){const p=state.profile;return `${languageSettings()}<div class="card" style="margin-bottom:16px"><h3>تحديث التطبيق</h3><p class="hint">احفظ أي تعديلات أولاً، ثم اضغط الزر لتحميل أحدث نسخة بدون إغلاق التطبيق. يحتاج اتصالاً بالإنترنت.</p><button class="button secondary" onclick="refreshApp()">تحديث التطبيق</button><div id="refreshConfirm" hidden><p class="hint">سيُعاد تحميل التطبيق. التعديلات غير المحفوظة ستضيع. هل حفظت تعديلاتك وتريد المتابعة؟</p><div class="flex"><button class="button" onclick="refreshApp(true)">حفظت تعديلاتي، حدّث الآن</button><button class="button ghost" onclick="document.getElementById('refreshConfirm').hidden=true">إلغاء</button></div></div></div><div class="two"><div class="card"><h3>الملف الشخصي والأهداف</h3><form class="formGrid" onsubmit="saveSettings(event)">${[['age','العمر','سنة'],['height','الطول','سم'],['goalWeight','الوزن المستهدف','كجم'],['calories','هدف السعرات اليومي','سعرة'],['protein','هدف البروتين اليومي','غ'],['trainingDays','أيام النادي أسبوعياً','يوم']].map(([n,l,u])=>`<div class="field"><label>${l} (${u})</label><input name="${n}" type="number" step="${n==='goalWeight'?'0.1':'1'}" min="1" value="${p[n]}" required></div>`).join('')}<div class="field"><label>وقت النادي</label><input name="trainingTime" type="time" value="${p.trainingTime}"></div><div class="field"><label>وقت أول وجبة</label><input name="firstMeal" type="time" value="${p.firstMeal}"></div><div class="full"><button class="button">حفظ الإعدادات</button></div></form></div><div class="stack"><div class="card"><h3>تفضيلاتك المحفوظة</h3><p class="subtle">كويتي وإيراني ومشاوي وستيك. بدون أكل هندي أو واي بروتين أو حليب سادة. فواكه مفضلة: تمر، موز، فراولة، تفاح. يوم مفتوح مرن.
+function settingsPage(){const p=state.profile;return `${languageSettings()}<div class="card" style="margin-bottom:16px"><h3>تحديث التطبيق</h3><p class="hint">احفظ أي تعديلات أولاً، ثم اضغط الزر لتحميل أحدث نسخة بدون إغلاق التطبيق. يحتاج اتصالاً بالإنترنت.</p><button class="button secondary" onclick="refreshApp()">تحديث التطبيق</button><div id="refreshConfirm" hidden><p class="hint">سيُعاد تحميل التطبيق. التعديلات غير المحفوظة ستضيع. هل حفظت تعديلاتك وتريد المتابعة؟</p><div class="flex"><button class="button" onclick="refreshApp(true)">حفظت تعديلاتي، حدّث الآن</button><button class="button ghost" onclick="document.getElementById('refreshConfirm').hidden=true">إلغاء</button></div></div></div><div class="two"><div class="card"><h3>الملف الشخصي والأهداف</h3><form class="formGrid" onsubmit="saveSettings(event)">${[['age','العمر','سنة'],['height','الطول','سم'],['goalWeight','الوزن المستهدف','كجم'],['calories','هدف السعرات اليومي','سعرة'],['protein','هدف البروتين اليومي','غ'],['trainingDays','أيام النادي أسبوعياً','يوم']].map(([n,l,u])=>`<div class="field"><label>${l} (${u})</label><input name="${n}" type="number" step="${n==='goalWeight'?'0.1':'1'}" min="1" value="${p[n]}" required></div>`).join('')}<div class="field"><label>وقت النادي</label><input name="trainingTime" type="time" value="${p.trainingTime}"></div><div class="field"><label>وقت أول وجبة</label><input name="firstMeal" type="time" value="${p.firstMeal}"></div><div class="full"><button class="button">حفظ الإعدادات</button></div></form></div><div class="stack"><div class="card"><h3>حسابك</h3><button class="button secondary" onclick="signOut()">تسجيل الخروج</button>
 </div>
 <div class="card">
   <h3>نقل القياسات القديمة</h3>
@@ -88,7 +72,7 @@ function settingsPage(){const p=state.profile;return `${languageSettings()}<div 
 </div>
 <div class="card"><h3>نسخة احتياطية</h3>
 <p class="subtle">تُزامَن الأوزان والقياسات والإعدادات والتمارين عند تسجيل الدخول والاتصال بالإنترنت. ويمكنك تصدير نسخة احتياطية من بياناتك.</p><div class="flex"><button class="button secondary" onclick="exportData()">تصدير البيانات</button><label class="button ghost" style="cursor:pointer">استيراد ملف <input type="file" accept="application/json" hidden onchange="importData(event)"></label></div></div><div class="card"><h3>الخصوصية والتنبيهات</h3><p class="subtle">لا تُرسل بياناتك إلى ChatGPT تلقائياً. انسخ الملخص أو شارك الصور بنفسك عند طلب المراجعة. لا توجد تنبيهات آلية في الخلفية.</p></div></div></div>`}
-function render(){document.getElementById('todayLabel').textContent=new Date().toLocaleDateString(appLocale(),{timeZone:'Asia/Kuwait',weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,training:trainingPage,insights:insightsPage,coach:coachPage,settings:settingsPage})[page]();localizeUI();hydrateTrainingPhotoImages?.();}
+function render(){if(!accountId||accountLoad)return;document.getElementById('todayLabel').textContent=new Date().toLocaleDateString(appLocale(),{timeZone:'Asia/Kuwait',weekday:'long',day:'numeric',month:'long',year:'numeric'});document.getElementById('pageTitle').textContent=items.find(x=>x[0]===page)[2];document.getElementById('view').innerHTML=({dashboard,weight:weightPage,food:foodPage,measure:measuresPage,training:trainingPage,insights:insightsPage,coach:coachPage,settings:settingsPage})[page]();localizeUI();hydrateTrainingPhotoImages?.();}
 
 async function addWeight(e) {
   e.preventDefault();
@@ -428,10 +412,13 @@ async function signOut() {
     return;
   }
 
+  resetAccount();
+  showLogin();
   alert("تم تسجيل الخروج");
 }
 
 function showLogin() {
+  for(const id of ["desktopNav","mobileNav"])document.getElementById(id).replaceChildren();
   document.getElementById("view").innerHTML = `
     <div class="card" style="max-width:420px;margin:40px auto">
       <h2>تسجيل الدخول</h2>
@@ -478,42 +465,53 @@ function showLogin() {
 }
 
 
-async function startAuth() {
-  const { data, error } =
-    await supabaseClient.auth.getUser();
-
-  if (error && error.name !== "AuthSessionMissingError") {
-    console.error("Auth error:", error.message);
-  }
-
-   if (data?.user) {
-    await loadCloudWeights(data.user.id);
-    await loadCloudMeasurements(data.user.id);
-    await loadCloudSettings(data.user.id); 
-    nav();
-    render();
-  } else {
-    showLogin();
-  }
+function resetAccount(){
+ accountId=null;
+ accountLoad=null;
+ state=structuredClone(initial);
+ cloudSettingsExtras={};
+ page='dashboard';
+ if(typeof trainingDate!=='undefined')trainingDate='';
+ if(typeof trainingPhoto!=='undefined')trainingPhoto='';
 }
-
-
-supabaseClient.auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_OUT") {
-    showLogin();
-    return;
+async function activateAccount(userId){
+ if(accountId===userId)return;
+ resetAccount();
+ accountId=userId;
+ try{const cached=JSON.parse(localStorage.getItem(KEY+':'+userId)||'null');
+  if(cached)state={...state,...cached,profile:{...initial.profile,...cached.profile}};
+ }catch{}
+ for(const id of ['desktopNav','mobileNav'])document.getElementById(id).replaceChildren();
+ document.getElementById('view').textContent='جاري تحميل بيانات حسابك…';
+ const load=Promise.all([loadCloudWeights(userId),loadCloudMeasurements(userId),loadCloudSettings(userId)]);
+ accountLoad=load;
+ try{await load;}finally{
+  if(accountId===userId&&accountLoad===load){
+   accountLoad=null;
+   selectedWeek=Object.keys(state.mealWeeks||{}).sort().at(-1)||weekStart(dateNow());
+   selectedMealDate=selectedWeek;
+   nav();
+   render();
   }
-
-  if (event === "SIGNED_IN" && session?.user) {
-    // نؤجل تحميل البيانات إلى خارج حدث المصادقة
-    setTimeout(async () => {
-  await loadCloudWeights(session.user.id);
-   await loadCloudMeasurements(session.user.id);  
-   await loadCloudSettings(session.user.id);   
-  nav();
-  render();
-}, 0);
-  }
+ }
+}
+let authGeneration=0;
+async function startAuth(){
+ const generation=authGeneration;
+ const {data}=await supabaseClient.auth.getUser();
+ if(generation!==authGeneration)return;
+ if(data?.user)await activateAccount(data.user.id);
+ else showLogin();
+}
+supabaseClient.auth.onAuthStateChange((event,session)=>{
+ if(event==='SIGNED_OUT'){
+  authGeneration++;
+  resetAccount();
+  showLogin();
+ }else if(event==='SIGNED_IN'&&session?.user&&session.user.id!==accountId){
+  const generation=++authGeneration;
+  setTimeout(()=>{if(generation===authGeneration)activateAccount(session.user.id);},0);
+ }
 });
 
 startAuth();
@@ -525,6 +523,7 @@ async function loadCloudWeights(userId) {
     .eq("user_id", userId)
     .order("log_date", { ascending: true });
 
+  if(accountId!==userId)return;
   if (error) {
     console.error("Weight sync error:", error.message);
     alert("تعذر تحميل الأوزان من السحابة");
@@ -614,6 +613,7 @@ async function loadCloudMeasurements(userId) {
     .eq("user_id", userId)
     .order("log_date", { ascending: true });
 
+  if(accountId!==userId)return;
   if (error) {
     console.error("Measurements sync error:", error.message);
     alert("تعذر تحميل القياسات من السحابة");
@@ -653,14 +653,15 @@ async function loadCloudMeasurements(userId) {
 let cloudSettingsExtras={};
 let cloudWriteQueue=Promise.resolve();
 function saveCloudSettings(){
- const task=cloudWriteQueue.then(()=>writeCloudSettings()).catch(()=>{alert('تم الحفظ على الجهاز، لكن الاتصال بالسحابة تعذّر. حاول الحفظ مجدداً عند رجوع الاتصال.');return false;});
+ const owner=accountId;
+ const task=cloudWriteQueue.then(()=>owner&&owner===accountId?writeCloudSettings(owner):false).catch(()=>{alert('تم الحفظ على الجهاز، لكن الاتصال بالسحابة تعذّر. حاول الحفظ مجدداً عند رجوع الاتصال.');return false;});
  cloudWriteQueue=task;return task;
 }
-async function writeCloudSettings() {
+async function writeCloudSettings(owner) {
   const { data: { user }, error: authError } =
     await supabaseClient.auth.getUser();
 
-  if (authError || !user) {
+  if (authError || user?.id!==owner || accountId!==owner) {
     alert("سجّل الدخول أولاً");
     return;
   }
@@ -701,6 +702,7 @@ async function loadCloudSettings(userId) {
     .eq("user_id", userId)
     .maybeSingle();
 
+  if(accountId!==userId)return;
   if (error) {
     alert("تعذر تحميل الإعدادات: " + error.message);
     return;
