@@ -12,15 +12,21 @@ const exerciseOptionsByGroup={
 };
 function exerciseChoiceOptions(group, field){
  const saved=Object.values(state.training||{}).flatMap(s=>s.exercises||[]).filter(x=>x.group===group).map(x=>x[field?'device':'name']);
- return [...new Set([...(exerciseOptionsByGroup[group]||[]).map(x=>x[field]),...saved].filter(Boolean))].map(x=>'<option value="'+safe(x)+'"></option>').join('');
+ return [...new Set([...(exerciseOptionsByGroup[group]||[]).map(x=>x[field]),...saved].filter(Boolean))].map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join('');
 }
 function refreshExerciseChoices(form, suggestDevice=false){
  const group=form.elements.group.value;
+ const selectedName=form.querySelector('#exerciseNameOptions').value;
+ const selectedDevice=form.querySelector('#exerciseDeviceOptions').value;
  form.querySelector('#exerciseNameOptions').innerHTML='<option value="">اختر من القائمة</option>'+exerciseChoiceOptions(group,0);
  form.querySelector('#exerciseDeviceOptions').innerHTML='<option value="">اختر من القائمة</option>'+exerciseChoiceOptions(group,1);
  if(suggestDevice&&!form.elements.device.value){
   const match=(exerciseOptionsByGroup[group]||[]).find(([name])=>name===form.elements.name.value.trim());
   if(match)form.elements.device.value=match[1];
+ }
+ for(const [id,value] of [['exerciseNameOptions',selectedName],['exerciseDeviceOptions',form.elements.device.value||selectedDevice]]){
+  const select=form.querySelector('#'+id);
+  if(Array.from(select.options).some(option=>option.value===value))select.value=value;
  }
 }
 
