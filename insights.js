@@ -85,15 +85,15 @@ function insightAlternativeExercises(start,end){
  const sessions=Object.entries(state.training||{}).filter(([d,s])=>d>=start&&d<=end&&s.status==='trained');
  if(!sessions.length||sessions.some(([,s])=>s.pain))return '';
  const alternatives=[
-  [/سكوات|squat/i,'ضغط الأرجل','leg press'],
-  [/ضغط أرجل|ليج برس|leg press/i,'سكوات إلى صندوق','box squat'],
-  [/بنش|ضغط صدر|chest press|bench press/i,'جهاز ضغط الصدر بقبضة مريحة','machine chest press with a comfortable grip'],
-  [/تجديف|rowing|\brow\b/i,'تجديف بجهاز يسند الصدر','chest-supported row'],
-  [/سحب أمامي|pulldown/i,'سحب أمامي بقبضة محايدة','neutral-grip lat pulldown'],
-  [/بلانك|plank/i,'تمرين Dead Bug','dead bug'],
+  [/سكوات|squat/i,'ضغط الأرجل','leg press', 'https://www.nasm.org/resource-center/exercise-library/leg-press'],
+  [/ضغط أرجل|ليج برس|leg press/i,'سكوات إلى صندوق','box squat', 'https://www.youtube.com/watch?v=-GaRp6_b2vk'],
+  [/بنش|ضغط صدر|chest press|bench press/i,'جهاز ضغط الصدر بقبضة مريحة','machine chest press with a comfortable grip', 'https://www.acefitness.org/resources/everyone/exercise-library/188/seated-chest-press/'],
+  [/تجديف|rowing|\brow\b/i,'تجديف بجهاز يسند الصدر','chest-supported row', 'https://www.acefitness.org/resources/everyone/exercise-library/equipment/weight-machines-selectorized/'],
+  [/سحب أمامي|pulldown/i,'سحب أمامي بقبضة محايدة','neutral-grip lat pulldown', 'https://www.acefitness.org/resources/everyone/exercise-library/158/seated-lat-pulldown/'],
+  [/بلانك|plank/i,'تمرين Dead Bug','dead bug', 'https://www.nasm.org/resource-center/exercise-library/dead-bug'],
  ];
  const names=[...new Set(sessions.flatMap(([,s])=>(s.exercises||[]).map(x=>String(x.name||'').trim()).filter(Boolean)))];
- const picks=names.flatMap(name=>{const match=alternatives.find(([pattern])=>pattern.test(name));return match?[safe(name)+' ← '+insightCopy(match[1],match[2])]:[];}).slice(0,3);
+ const picks=names.flatMap(name=>{const match=alternatives.find(([pattern])=>pattern.test(name));return match?[safe(name)+' ← <a href="'+safe(match[3])+'" target="_blank" rel="noopener noreferrer">'+safe(insightCopy(match[1],match[2]))+' · '+insightCopy('الجهاز وطريقة الأداء','Equipment and technique')+'</a>']:[];}).slice(0,3);
  return picks.length?'<p>'+insightCopy('بدائل من تمارينك المسجلة عند الحاجة. جرّبها بحمل مريح إذا كانت الحركة بلا ألم.','Alternatives for your logged exercises. Try a comfortable load when the movement is pain-free.')+'</p><ul>'+picks.map(x=>'<li>'+x+'</li>').join('')+'</ul>':'';
 }
 function insightWeeklyCard(){
