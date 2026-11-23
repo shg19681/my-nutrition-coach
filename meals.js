@@ -33,12 +33,11 @@ async function saveMealState(){save();const ok=await saveCloudSettings();if(ok==
 async function toggleDatedMeal(date,i,value){state.mealDone||={};state.mealDone[date+'-'+i]=value;await saveMealState();}
 function chooseMealWeek(key){selectedWeek=key;selectedMealDate=key;render();}
 function foodPage(){const keys=Object.keys(state.mealWeeks||{}).sort();if(!keys.length)return azmInstallGuide(true)+azmGeneratorCard()+'<div class="card"><button class="button secondary" onclick="createFirstMealWeek()">إنشاء مسودة يدوية</button></div>';if(!getMealWeek(selectedWeek)){selectedWeek=keys.at(-1);selectedMealDate=selectedWeek;}const w=getMealWeek(selectedWeek),index=Math.round((new Date(selectedMealDate+'T12:00:00Z')-new Date(selectedWeek+'T12:00:00Z'))/86400000);const next=addDate(weekStart(dateNow()),7);
-return `${azmGeneratorCard()}${azmInstallGuide()}<div class="card"><h3>جدول الأكل الأسبوعي</h3><p class="subtle">الأسبوع من الأحد إلى السبت.</p><div class="field"><label for="mealWeek">الأسبوع</label><select id="mealWeek" onchange="chooseMealWeek(this.value)">${keys.map(k=>`<option value="${k}" ${k===selectedWeek?'selected':''}>${k} إلى ${addDate(k,6)} · ${getMealWeek(k).status==='approved'?'معتمد':'مسودة'}</option>`).join('')}</select></div><p class="tag">${w.status==='approved'?'معتمد':'مسودة للمراجعة؛ لا تُرسل للطباخ بعد'}</p><div class="daytabs">${weekNames.map((name,i)=>`<button class="${index===i?'active':''}" onclick="selectedMealDate='${addDate(selectedWeek,i)}';render()">${name}<br>${addDate(selectedWeek,i)}${azmIsOpen(w,i)?' ★':''}</button>`).join('')}</div><h3 style="margin-top:20px">${dateLabel(selectedMealDate)}</h3>${datedMealRows(selectedWeek,index)}${azmComponentChoices(w,index)}${Array.isArray(w.openDays)?`<p class="hint">الأيام المفتوحة: ${safe(azmOpenDays(w).map(i=>weekNames[i]).join('، ')||'ما فيه')}</p>${azmDayFuelNote(w,index)}`:`<div class="field"><label for="weekOpen">اليوم المفتوح</label><select id="weekOpen" onchange="changeWeekOpen(Number(this.value))">${weekNames.map((n,i)=>`<option value="${i}" ${azmIsOpen(w,i)?'selected':''}>${n}</option>`).join('')}</select></div>`}${!azmIsOpen(w,index)?`<details><summary>طريقة تحضير وجبات اليوم</summary><p style="white-space:pre-wrap">${safe(w.days[azmSourceIndex(w,index)].recipe)}</p></details>`:''}<details style="margin-top:15px"><summary>دليل الطبخ والتتبيلات والمرافقات</summary><p style="white-space:pre-wrap">${safe(kitchenGuide)}</p></details><p class="notice">اتبع حالة الوزن المكتوبة بجانب المكوّن. الأرز والبطاطا بعد الطبخ، واللحوم والدجاج دون عظم. البيض والتمر بالعدد كما اعتمدتهما؛ أوزانهما التقريبية في ملف الطباخ. أوقات الطبخ تقديرية وليست ضماناً للسلامة.</p><details><summary>تعديل وجبات هذا اليوم</summary>${mealEditor(w,index)}</details><div class="flex" style="margin-top:16px">${w.status!=='approved'?'<button class="button" onclick="approveMealWeek()">اعتماد هذا الأسبوع</button>':''}</div></div><div class="card" style="margin-top:16px"><h3>رسالة الطباخ</h3>${w.status==='approved'?`<p style="white-space:pre-wrap">${safe(datedChefMessage())}</p><button type="button" class="button" onclick="printChefGuide()">طباعة / حفظ PDF للطباخ</button><a class="button secondary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(datedChefMessage())}">فتح واتساب برسالة جاهزة</a>`:'<p>راجع المسودة واعتمدها لتجهيز رسالة الطباخ.</p>'}<p class="hint">الإرسال من واتساب بيدك، ولا يحدث تلقائياً.</p></div><div class="card" style="margin-top:16px"><h3>تجهيز الأسبوع التالي يوم السبت</h3><p>${new Date(dateNow()+'T12:00:00Z').getUTCDay()===6?'اليوم السبت؛ حان وقت مراجعة الأسبوع القادم.':'راجع الجدول القادم يوم السبت قبل بداية الأسبوع.'}</p><p class="subtle">نجهّز الوجبات الجديدة معاً في محادثتك، ثم تعدّل المسودة هنا وتعتمدها. لا يوجد توليد أو إرسال تلقائي بالخلفية.</p><button class="button secondary" onclick="createMealDraft()">تجهيز مسودة الأسبوع التالي للأسبوع المعروض</button><p class="hint">تُنسخ وجبات الأسبوع المعروض كبداية للمراجعة، ولا تُعتبر خطة جديدة أو معتمدة تلقائياً.</p></div>`;}
+return `${azmGeneratorCard()}${azmInstallGuide()}<div class="card"><h3>جدول الأكل الأسبوعي</h3><p class="subtle">الأسبوع من الأحد إلى السبت.</p><div class="field"><label for="mealWeek">الأسبوع</label><select id="mealWeek" onchange="chooseMealWeek(this.value)">${keys.map(k=>`<option value="${k}" ${k===selectedWeek?'selected':''}>${k} إلى ${addDate(k,6)} · ${getMealWeek(k).status==='approved'?'معتمد':'مسودة'}</option>`).join('')}</select></div><p class="tag">${w.status==='approved'?'معتمد':'مسودة للمراجعة؛ لا تُرسل للطباخ بعد'}</p><div class="daytabs">${weekNames.map((name,i)=>`<button class="${index===i?'active':''}" onclick="selectedMealDate='${addDate(selectedWeek,i)}';render()">${name}<br>${addDate(selectedWeek,i)}${azmIsOpen(w,i)?' ★':''}</button>`).join('')}</div><h3 style="margin-top:20px">${dateLabel(selectedMealDate)}</h3>${datedMealRows(selectedWeek,index)}${azmComponentChoices(w,index)}${Array.isArray(w.openDays)?`<p class="hint">الأيام المفتوحة: ${safe(azmOpenDays(w).map(i=>weekNames[i]).join('، ')||'ما فيه')}</p>${azmDayFuelNote(w,index)}`:`<div class="field"><label for="weekOpen">اليوم المفتوح</label><select id="weekOpen" onchange="changeWeekOpen(Number(this.value))">${weekNames.map((n,i)=>`<option value="${i}" ${azmIsOpen(w,i)?'selected':''}>${n}</option>`).join('')}</select></div>`}${!azmIsOpen(w,index)?`<details><summary>طريقة تحضير وجبات اليوم</summary><p style="white-space:pre-wrap">${safe(w.days[azmSourceIndex(w,index)].recipe)}</p></details>`:''}<details style="margin-top:15px"><summary>دليل الطبخ والتتبيلات والمرافقات</summary><p style="white-space:pre-wrap">${safe(kitchenGuide)}</p></details><p class="notice">اتبع حالة الوزن المكتوبة بجانب المكوّن. الأرز والبطاطا بعد الطبخ، واللحوم والدجاج دون عظم. البيض والتمر بالعدد كما اعتمدتهما؛ أوزانهما التقريبية في ملف الطباخ. أوقات الطبخ تقديرية وليست ضماناً للسلامة.</p><details><summary>تعديل وجبات هذا اليوم</summary>${mealEditor(w,index)}</details><div class="flex" style="margin-top:16px">${w.status!=='approved'?'<button class="button" onclick="approveMealWeek()">اعتماد هذا الأسبوع</button>':''}</div></div><div class="card" style="margin-top:16px"><h3>رسالة الطباخ</h3>${w.status==='approved'?`<p style="white-space:pre-wrap">${safe(datedChefMessage())}</p><button type="button" class="button" onclick="printChefGuide()">طباعة / حفظ PDF للطباخ</button><a class="button secondary" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(datedChefMessage())}">فتح واتساب برسالة جاهزة</a>`:'<p>راجع المسودة واعتمدها لتجهيز رسالة الطباخ.</p>'}<p class="hint">الإرسال من واتساب بيدك، ولا يحدث تلقائياً.</p></div>`;}
 function mealEditor(w,index){if(azmIsOpen(w,index))return '<p>اليوم مفتوح، بدون وجبات محددة.</p>';return `<p class="hint">نص الوجبات القابل للتعديل يبقى بلغته الأصلية؛ تغيير لغة الواجهة لا يعيد كتابة بياناتك.</p><form onsubmit="saveMealEdits(event,${index})">${datedMeals(selectedWeek,index).map((m,i)=>`<div class="field"><label>اسم الوجبة ${i+1}<input name="title${i}" value="${safe(m.title)}" maxlength="120" required></label><label>المقادير والكميات<textarea name="detail${i}" maxlength="2000" required>${safe(m.detail)}</textarea></label></div>`).join('')}<div class="field"><label>طريقة التحضير<textarea name="recipe" maxlength="5000">${safe(w.days[azmSourceIndex(w,index)].recipe)}</textarea></label></div><button class="button secondary">حفظ كمسودة للمراجعة</button></form>`;}
 async function saveMealEdits(e,index){e.preventDefault();const f=new FormData(e.target),w=editWeek(selectedWeek),source=azmSourceIndex(w,index);w.days[source].meals=w.days[source].meals.map((m,i)=>{const title=String(f.get('title'+i)).trim(),detail=String(f.get('detail'+i)).trim();return detail===m.detail?{...m,title}:{title,detail};});w.days[source].recipe=String(f.get('recipe'));w.status='draft';await saveMealState();render();}
 async function changeWeekOpen(index){const w=editWeek(selectedWeek);if(azmIsOpen(w,index))return;w.open=index;w.status='draft';await saveMealState();render();}
 async function approveMealWeek(){const week=getMealWeek(selectedWeek);if(!week||weekNames.some((_,i)=>!azmIsOpen(week,i)&&(!datedMeals(selectedWeek,i).length||datedMeals(selectedWeek,i).some(meal=>!meal.detail.trim()))))return alert('عبّ مقادير كل أيام الخطة قبل الاعتماد.');if(!confirm('اعتماد الوجبات والكميات واليوم المفتوح لهذا الأسبوع بعد مراجعتها؟'))return;editWeek(selectedWeek).status='approved';await saveMealState();render();}
-async function createMealDraft(){const key=addDate(selectedWeek,7);if(getMealWeek(key)){chooseMealWeek(key);return;}const w=structuredClone(getMealWeek(selectedWeek));w.status='draft';state.mealWeeks||={};state.mealWeeks[key]=w;selectedWeek=key;selectedMealDate=key;await saveMealState();render();}
 function datedChefMessageSource(){const w=getMealWeek(selectedWeek);return `جدول ${selectedWeek} إلى ${addDate(selectedWeek,6)} معتمد.\nالأيام المفتوحة: ${azmOpenDays(w).map(i=>dateLabel(addDate(selectedWeek,i))).join('، ')||'ما فيه'}.\n\n`+weekNames.map((name,i)=>{const date=addDate(selectedWeek,i);return `${name} ${date}\n`+(azmIsOpen(w,i)?'يوم مفتوح':datedMeals(selectedWeek,i).map((m,mi)=>{const swaps=parseMealIngredients(m).map((x,ii)=>{const sw=state.mealSwaps?.[swapKey(date,mi,ii)];return sw?`${x.name}: يستبدل بـ ${sw.name} ${sw.amount} غ (≈ ${Math.round(sw.amount*sw.kcal100/100)} سعرة)`:''}).filter(Boolean);return m.title+': '+m.detail+(swaps.length?'\nبدائل معتمدة: '+swaps.join('؛ '):'')}).join('\n'))}).join('\n\n');}
 function dashboard(){const today=dateNow(),key=weekStart(today),w=getMealWeek(key),index=new Date(today+'T12:00:00Z').getUTCDay();return `${!Object.keys(state.mealWeeks||{}).length?azmInstallGuide(true):azmInstallGuide()}<div class="card"><h3>وجبات ${dateLabel(today)}</h3>${w?.status==='approved'?datedMealRows(key,index):'<p>ما فيه جدول معتمد لهالتاريخ. افتح الغذاء وجهّز مسودتك أو راجع جدولك.</p>'}<button class="button secondary" onclick="chooseMealWeek('${w?key:(selectedWeek||key)}');go('food')">عرض الجدول الأسبوعي</button></div><div class="grid" style="margin-top:16px">${cardMetric('آخر وزن',latest()?fmt(latest().weight):'—','كجم',latest()?.date||'')}${cardMetric('الوزن المستهدف',state.profile.goalWeight?fmt(state.profile.goalWeight):'—','كجم','')}${cardMetric('هدف البروتين',state.profile.protein?fmt(state.profile.protein):'—','غ','هدف تخطيطي')}</div><div class="card" style="margin-top:16px"><h3>تمرين اليوم</h3><p>${sessionFor(today).status==='trained'?'تمرنت':sessionFor(today).status==='rest'?'راحة':'لم يُسجّل'}</p><button class="button" onclick="go('training')">سجّل التمرين أو الراحة</button></div><div class="card" style="margin-top:16px"><h3>تطور الوزن</h3>${chart()}</div>`;}
 
@@ -229,14 +228,18 @@ function azmPickOptions(max,selected,min=0){
  }).join('');
 }
 function azmGeneratorCard(){
- const key=weekStart(dateNow());
- const plans=Object.entries(state.mealWeeks||{});
- const prefs=plans.sort(([a],[b])=>b.localeCompare(a)).find(([,w])=>w.preferences)?.[1].preferences||{};
- return `<details class="card" ${plans.length?'':'open'}><summary><strong>جهّز جدولي من اختياراتي</strong></summary>
+ const key=azmNextMealWeek();
+ const saved=azmSavedFoodPreferences();
+ const prefs=saved||Object.entries(state.mealWeeks||{}).sort(([a],[b])=>b.localeCompare(a)).find(([,w])=>w.preferences)?.[1].preferences||{};
+ const quick=saved?`<div class="card"><h3>مسودة الأسبوع</h3><p>${safe(azmProgressSummary(azmMealProgress(saved,key)))}</p>
+ <form class="formGrid" onsubmit="generateSavedAzmWeek(event)">
+ <label class="field">الأسبوع اللي تبيه<input type="date" name="week" required value="${safe(key)}"></label>
+ <p class="hint full" data-plan-status role="status"></p><button class="button full" type="submit">جهّز المسودة</button></form></div>`:'';
+ return `${quick}<details class="card" ${saved?'':'open'}><summary><strong>${saved?'عدّل معلوماتي وتفضيلاتي':'إعداد جدول الأكل لأول مرة'}</strong></summary>
  <p>اختَر شنو تاكل. أي مكوّن ما تختاره ما يدخل بجدولك أو بدائله. الحصص بداية عامة وتقدر تعدّلها من محرّر اليوم.</p>
  ${azmFoodCardStyles}
  <form class="formGrid azm-food-form" onsubmit="generateAzmMealWeek(event)" onchange="updateAzmFoodCards(this); updateAzmWeekFields(this)">
- <label class="field">الأسبوع اللي تبيه<input type="date" name="week" required value="${safe(getMealWeek(key)?addDate(key,7):key)}"></label>
+ ${saved?'':`<label class="field">الأسبوع اللي تبيه<input type="date" name="week" required value="${safe(key)}"></label>`}
  ${azmFuelFields(prefs)}
  <label class="field">الوجبات الرئيسية باليوم<select name="meals">${azmPickOptions(4,prefs.meals??3,1)}</select></label>
  <label class="field">السناكات باليوم<select name="snacks">${azmPickOptions(3,prefs.snacks??1)}</select></label>
@@ -248,10 +251,10 @@ function azmGeneratorCard(){
  <label class="full"><input type="checkbox" name="food" value="${azmFoodIdByName['تمر']}" ${prefs.foods?.includes(azmFoodIdByName['تمر'])?'checked':''}> أبي تمر ضمن خيارات أكلي</label>
  ${azmNamedRecipeMenu(prefs)}
  <div class="full"><h4>المكونات اللي تاكلها</h4>${azmFoodCards(prefs)}</div>
- ${azmAllergyCard()}
+ ${azmAllergyCard(prefs)}
  <p class="hint full">المولّد يستخدم اختياراتك ويعرض تقديرات للحصص والسعرات.</p>
  <p class="hint full" data-plan-status role="status"></p>
- <button class="button full" type="submit">جهّز مسودة أسبوعي</button>
+ <button class="button full" type="submit">${saved?'حفظ تفضيلاتي':'احفظ معلوماتي وجهّز المسودة'}</button>
  </form></details>`;
 }
 function setAzmFoodGroup(button,value){
@@ -415,6 +418,7 @@ function azmDishIdentity(meal){
  return Number.isInteger(meal.namedRecipe)?'recipe:'+meal.namedRecipe:'dish:'+String(meal.title||'').replace(/^.*? – /,'');
 }
 function azmCalorieTargets(prefs){
+ if(prefs.keptTargets)return prefs.keptTargets;
  const base=10*prefs.weight+6.25*prefs.height-5*prefs.age+(prefs.sex==='male'?5:-161);
  const adjustment=prefs.goal<prefs.weight-0.5?-300:prefs.goal>prefs.weight+0.5?200:0;
  const average=base*prefs.activity+adjustment;
@@ -496,27 +500,97 @@ async function setAzmMealIngredient(index,mi,pi,id){
  await saveMealState();
  render();
 }
+
 async function generateAzmMealWeek(event){
  event.preventDefault();
- const form=event.currentTarget, status=form.querySelector('[data-plan-status]'), f=new FormData(form), date=String(f.get('week')||'');
- if(f.getAll('allergen').length||String(f.get('allergyOther')||'').trim()){status.textContent='بما إن عندك حساسية، جهّز مسودة يدوية وراجع المكونات والملصقات قبل الاعتماد.';return;}
- if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date)))return;
- const key=weekStart(date);
- if(getMealWeek(key)){status.textContent='هالأسبوع عندك له جدول. اختَر أسبوع ثاني أو عدّل الجدول الموجود.';return;}
- const prefs={meals:Number(f.get('meals')),snacks:Number(f.get('snacks')),fish:Number(f.get('fish')),openDays:f.getAll('openDays').map(Number),training:f.getAll('trainingDays').map(Number),quick:f.has('quick'),dessertCount:Number(f.get('dessertCount')),dessertRecipes:f.getAll('dessertRecipe').map(Number),style:String(f.get('style')||'mix'),foods:f.getAll('food'),weight:Number(f.get('currentWeight')),goal:Number(f.get('goal')),height:Number(f.get('height')),age:Number(f.get('age')),sex:String(f.get('sex')),activity:Number(f.get('activity'))};
+ const form=event.currentTarget,status=form.querySelector('[data-plan-status]'),f=new FormData(form);
+ const editing=Boolean(azmSavedFoodPreferences());
+ const prefs={meals:Number(f.get('meals')),snacks:Number(f.get('snacks')),fish:Number(f.get('fish')),openDays:f.getAll('openDays').map(Number),training:f.getAll('trainingDays').map(Number),quick:f.has('quick'),dessertCount:Number(f.get('dessertCount')),dessertRecipes:f.getAll('dessertRecipe').map(Number),style:String(f.get('style')||'mix'),foods:f.getAll('food'),weight:Number(f.get('currentWeight')),goal:Number(f.get('goal')),height:Number(f.get('height')),age:Number(f.get('age')),sex:String(f.get('sex')),activity:Number(f.get('activity')),allergens:f.getAll('allergen'),allergyOther:String(f.get('allergyOther')||'').trim()};
  if(![1,2,3,4].includes(prefs.meals)||![0,1,2,3].includes(prefs.snacks)||![0,1,2,3,4,5,6,7].includes(prefs.fish)||prefs.openDays.length>2||prefs.openDays.some(i=>!weekNames[i])||prefs.training.some(i=>!weekNames[i]))return;
  if(!Number.isInteger(prefs.dessertCount)||prefs.dessertCount<0||prefs.dessertCount>7-prefs.openDays.length||prefs.fish>7-prefs.openDays.length){status.textContent='عدد وجبات السمك أو الحلى لازم يكون ضمن أيام الجدول فقط.';return;}
  if(!(prefs.weight>=30&&prefs.weight<=350&&prefs.goal>=30&&prefs.goal<=350&&prefs.height>=120&&prefs.height<=230&&prefs.age>=18&&prefs.age<=100&&['male','female'].includes(prefs.sex)&&[1.2,1.35,1.5].includes(prefs.activity))){status.textContent='راجع الوزن والطول والعمر ومستوى النشاط.';return;}
- if(azmDessertCount(prefs)&&!azmMatchedRecipes(prefs,'dessert').length){status.textContent='اختَر مكونات حلى يناسبك من قائمة الأطباق والحلويات، أو غيّر العدد إلى بدون حلى.';return;}
- const draft=buildAzmMealWeek(key,prefs,state.mealWeeks);
- if(!draft){status.textContent='اختياراتك ما تكفي لتجهيز هالعدد بأطباق متنوعة. زِد الأطباق أو المكونات المختارة، أو قلّل عدد الوجبات أو السناكات أو الحلى.';return;}
+
+ if(editing){
+  azmStoreFoodPreferences(prefs);
+  await saveMealState();
+  status.textContent='انحفظت المعلومات للمسودة الياية.';
+  render();
+  return;
+ }
+ await azmCreateWeeklyDraft(String(f.get('week')||''),prefs,status,true);
+}
+async function generateSavedAzmWeek(event){
+ event.preventDefault();
+ const form=event.currentTarget,prefs=azmSavedFoodPreferences();
+ if(!prefs)return;
+ await azmCreateWeeklyDraft(String(new FormData(form).get('week')||''),prefs,form.querySelector('[data-plan-status]'),false);
+}
+function azmSavedFoodPreferences(){
+ const stored=state.profile?.azmFoodPreferences;
+ if(stored?.weight>0&&Array.isArray(stored.foods))return stored;
+ const recent=Object.entries(state.mealWeeks||{}).sort(([a],[b])=>b.localeCompare(a)).find(([,w])=>w.preferences?.sex&&w.preferences?.weight)?.[1].preferences;
+ if(!recent)return null;
+ const {progress,keptTargets,...prefs}=recent;
+ return prefs;
+}
+function azmStoreFoodPreferences(prefs){
+ state.profile||={};
+ state.profile.azmFoodPreferences={...prefs};
  state.profile.goalWeight=prefs.goal;
  state.profile.trainingDays=prefs.training.length;
+}
+function azmNextMealWeek(){
+ let key=weekStart(dateNow());
+ while(getMealWeek(key))key=addDate(key,7);
+ return key;
+}
+async function azmCreateWeeklyDraft(date,prefs,status,first){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date))){status.textContent='اختَر تاريخ الأسبوع.';return;}
+ const key=weekStart(date);
+ if(getMealWeek(key)){status.textContent='هالأسبوع عندك له جدول. اختَر أسبوع ثاني أو عدّل الجدول الموجود.';return;}
+ if(prefs.allergens?.length||prefs.allergyOther){status.textContent='بما إن عندك حساسية، جهّز مسودة يدوية وراجع المكونات والملصقات قبل الاعتماد.';return;}
+ if(azmDessertCount(prefs)&&!azmMatchedRecipes(prefs,'dessert').length){status.textContent='اختَر مكونات حلى يناسبك من قائمة الأطباق والحلويات، أو غيّر العدد إلى بدون حلى.';return;}
+ const progress=azmMealProgress(prefs,key);
+ const effective={...prefs,weight:progress.weight,training:progress.training,progress,keptTargets:progress.keptTargets};
+ const draft=buildAzmMealWeek(key,effective,state.mealWeeks);
+ if(!draft){status.textContent='اختياراتك ما تكفي لتجهيز هالعدد بأطباق متنوعة. عدّل التفضيلات وزِد الأطباق أو خفّض العدد.';return;}
+ if(first||!state.profile?.azmFoodPreferences)azmStoreFoodPreferences(prefs);
  state.mealWeeks||={};
  state.mealWeeks[key]=draft;
  selectedWeek=selectedMealDate=key;
  await saveMealState();
  render();
+ return true;
+}
+function azmMealProgress(prefs,key){
+ const today=dateNow(), cutoff=key<today?key:today;
+ const validRows=(records,field)=>(Array.isArray(records)?records:Object.entries(records||{}).map(([date,value])=>({date,...value})))
+  .filter(row=>row?.date&&row.date<=cutoff&&Number.isFinite(Number(row[field]))&&Number(row[field])>0).sort((a,b)=>b.date.localeCompare(a.date));
+ const weights=validRows(state.weights,'weight').filter(row=>Number(row.weight)>=30&&Number(row.weight)<=350);
+ const measurements=validRows(state.measurements,'waist');
+ const latest=weights[0], waist=measurements[0];
+ const recentWeights=latest?weights.filter(row=>row.date>=addDate(latest.date,-6)):[];
+ const weight=recentWeights.length?recentWeights.reduce((total,row)=>total+Number(row.weight),0)/recentWeights.length:prefs.weight;
+ const trainingDays=Array.from({length:7},(_,i)=>addDate(cutoff,-7+i));
+ const exerciseRows=trainingDays.map(date=>({date,status:state.training?.[date]?.status}));
+ const complete=exerciseRows.every(x=>['trained','rest'].includes(x.status));
+ const training=complete?exerciseRows.filter(x=>x.status==='trained').map(x=>new Date(x.date+'T12:00:00Z').getUTCDay()).sort((a,b)=>a-b):prefs.training||[];
+ const previousWeights=latest?weights.filter(row=>row.date>=addDate(latest.date,-13)&&row.date<addDate(latest.date,-6)):[];
+ const previousWaist=waist&&measurements.find(row=>row.date<=addDate(waist.date,-7)&&row.date>=addDate(waist.date,-30));
+ const previousPlan=Object.entries(state.mealWeeks||{}).filter(([date,w])=>date<key&&w.status==='approved'&&w.preferences?.goal===prefs.goal).sort(([a],[b])=>b.localeCompare(a))[0]?.[1];
+ const previousMean=previousWeights.length?previousWeights.reduce((total,row)=>total+Number(row.weight),0)/previousWeights.length:null;
+ let keptTargets=null;
+ if(prefs.goal<weight&&recentWeights.length>=2&&previousWeights.length>=2&&Math.abs(weight-previousMean)<=.3&&waist&&previousWaist&&waist.date>=addDate(cutoff,-14)&&Number(previousWaist.waist)-Number(waist.waist)>=.5&&previousPlan){
+  const estimates=azmCalorieTargets(previousPlan.preferences);
+  if(Number.isFinite(estimates.training)&&Number.isFinite(estimates.rest))keptTargets=estimates;
+ }
+ return {weight,weightDate:latest?.date||'',weightCount:recentWeights.length,waistDate:waist?.date||'',training,trainingFromLog:complete,keptTargets};
+}
+function azmProgressSummary(progress){
+ const weight=progress.weightDate?'الوزن من '+(progress.weightCount>1?'متوسط '+progress.weightCount+' تسجيلات حتى ':'آخر تسجيل بتاريخ ')+progress.weightDate+'.':'ما فيه وزن مسجّل؛ راح نعتمد الوزن اللي دخلته أول مرة.';
+ const waist=progress.waistDate?' آخر قياس خصر: '+progress.waistDate+'.':' ما فيه قياس خصر مسجّل؛ التقدير من معلومات البداية المتوفرة.';
+ const training=progress.trainingFromLog?' أيام التمرين حسب آخر ٧ أيام مكتملة بالسجل.':' أيام التمرين حسب اختيارك المحفوظ.';
+ return weight+waist+training+(progress.keptTargets?' الوزن مستقر والخصر نازل؛ حافظنا على هدف السعرات السابق.':'');
 }
 const azmNamedRecipes=[
  [
@@ -967,11 +1041,11 @@ function azmFoodCards(prefs){
   ${sections.map(section=>`<div>${sections.length>1?`<h5>${safe(azmFoodSections[section][0])}</h5>`:''}<div class="azm-food-checks">${items.filter(([,food])=>food.section===section).map(([id,food])=>`<label><input type="checkbox" name="food" value="${id}" ${selected.has(id)?'checked':''}> ${safe(food.name)}</label>`).join('')}</div></div>`).join('')}</div></details>`;
  }).join('')+'</div>';
 }
-function azmAllergyCard(){
+function azmAllergyCard(prefs={}){
  const common=['الحليب والألبان','البيض','السمك','القشريات مثل الروبيان','الفول السوداني','المكسرات الشجرية','القمح','الصويا','السمسم','أخرى'];
- return `<details class="full azm-food-tile azm-allergy-card"><summary><span class="azm-food-icon" aria-hidden="true">⚠</span><span><b>الحساسية الغذائية</b><small data-allergy-count>بدون اختيار</small></span></summary>
- <div class="azm-food-tile-body"><div class="azm-food-checks">${common.map((name,i)=>`<label><input type="checkbox" name="allergen" value="${i}" ${name==='أخرى'?'data-allergy-other':''}> ${name}</label>`).join('')}</div>
- <label class="field" data-allergy-field hidden>اكتب الحساسية أو المكوّن<input name="allergyOther" maxlength="200" disabled></label>
+ return `<details class="full azm-food-tile azm-allergy-card"><summary><span class="azm-food-icon" aria-hidden="true">⚠</span><span><b>الحساسية الغذائية</b><small data-allergy-count>${prefs.allergens?.length?prefs.allergens.length+' مختار':'بدون اختيار'}</small></span></summary>
+ <div class="azm-food-tile-body"><div class="azm-food-checks">${common.map((name,i)=>`<label><input type="checkbox" name="allergen" value="${i}" ${prefs.allergens?.includes(String(i))?'checked':''} ${name==='أخرى'?'data-allergy-other':''}> ${name}</label>`).join('')}</div>
+ <label class="field" data-allergy-field ${prefs.allergens?.includes('9')?'':'hidden'}>اكتب الحساسية أو المكوّن<input name="allergyOther" maxlength="200" value="${safe(prefs.allergyOther||'')}" ${prefs.allergens?.includes('9')?'required':'disabled'}></label>
  <p class="hint">إذا حددت حساسية، استخدم مسودة يدوية وراجع المكونات والملصقات قبل الاعتماد.</p></div></details>`;
 }
 function updateAzmFoodCards(form){
@@ -997,7 +1071,7 @@ function azmWeekChecks(name,checked){
 }
 function azmFuelFields(prefs){
  const profile=state.profile||{}, previous=(state.weights||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).at(-1);
- return `<label class="field">وزني الحالي (كجم)<input name="currentWeight" type="number" min="30" max="350" step="0.1" required value="${safe(previous?.weight??prefs.weight??'')}"></label>
+ return `<label class="field">وزني الحالي (كجم)<input name="currentWeight" type="number" min="30" max="350" step="0.1" required value="${safe(prefs.weight??previous?.weight??'')}"></label>
  <label class="field">وزني المستهدف (كجم)<input name="goal" type="number" min="30" max="350" step="0.1" required value="${safe(profile.goalWeight??prefs.goal??'')}"></label>
  <label class="field">الطول (سم)<input name="height" type="number" min="120" max="230" required value="${safe(prefs.height??profile.height??'')}"></label>
  <label class="field">العمر<input name="age" type="number" min="18" max="100" required value="${safe(prefs.age??profile.age??'')}"></label>
@@ -1025,7 +1099,7 @@ function azmDayFuelNote(week,index){
  const day=week.days[index];
  if(azmIsOpen(week,index)||!day?.calorieTarget)return '';
  const training=(week.preferences?.training||[]).includes(index);
- return `<p class="hint">${training?'يوم تمرين':'يوم راحة'} · هدف تخطيطي ${fmt(day.calorieTarget)} سعرة. مجموع الحصص ظاهر تحت الوجبات.</p>`;
+ return `<p class="hint">${training?'يوم تمرين':'يوم راحة'} · هدف تخطيطي ${fmt(day.calorieTarget)} سعرة. مجموع الحصص ظاهر تحت الوجبات.</p>${week.preferences?.progress?'<p class="hint">'+safe(azmProgressSummary(week.preferences.progress))+'</p>':''}`;
 }
 function azmMealCalories(meal){
  return parseMealIngredients(meal).reduce((sum,x)=>sum+x.amount*x.food.kcal/100,0);
