@@ -230,13 +230,88 @@ function azmGeneratorCard(){
 function setAzmFoodGroup(button,value){
  for(const input of button.closest('details').querySelectorAll('input[name="food"]'))input.checked=value;
 }
+
+function azmDishOptions(meal,anchor=0){
+ const items=meal.parts.map(id=>azmFoods[id]);
+ const food=items[anchor];
+ const named=(groups)=>items.filter(x=>x!==food&&groups.includes(x.group)).map(x=>x.name).join(' و');
+ const starch=named(['starch','bread']), vegetables=named(['veg']), fruit=named(['fruit']), dairy=named(['dairy']), nuts=named(['nuts']);
+ const garnish=named(['fat','season']);
+ const side=[starch,vegetables,fruit,dairy,nuts].filter(Boolean).join(' و');
+ const accompaniment=items.find(x=>x!==food&&['starch','bread','veg','fruit','dairy','nuts'].includes(x.group));
+ const withSide=accompaniment?' مع '+accompaniment.name:'';
+ const finish='استعمل '+(garnish||'المكونات المدرجة')+' حسب الكميات، وقدّم حصتك بالوزن المكتوب.';
+ const sides=side?'قدّم '+side+' بجانبه. ':'';
+ const is=(group)=>food.group===group;
+ const rice=items.find(x=>/أرز/.test(x.name));
+ const lamb=food.name.includes('غنم');
+ const spice=items.some(x=>x.group==='season'&&!/ليمون|خل/.test(x.name));
+ const meat=is('protein');
+ const cook=is('fish')||is('seafood')?'وزن السمك أو الروبيان بعد الطبخ ومن دون عظم أو قشر.':'زن الحصة المطبوخة كما هو مكتوب.';
+ const label=food.name;
+ let choices;
+ if(meat||is('fish')||is('seafood')){
+  const riceName=lamb&&rice&&spice?'مجبوس لحم غنم':rice?'طبق '+label+' بالأرز':'طبق '+label+' بمرق خفيف';
+  const braise=rice?'اطبخ الأرز بجزء من مرق الطبخ وصفِّ الدهون الزائدة، ثم قدّمه بالكمية المكتوبة. ':'قدّم المرافقات حسب المقادير. ';
+  choices=[
+   [riceName,lamb&&rice&&spice?'اطبخ لحم الغنم بالماء والنكهات المختارة حتى يطرى. '+braise+finish:'حضّر '+label+' بالماء أو بعصارته مع النكهات الموجودة بالمقادير. '+braise+cook+' '+finish],
+   [meat?'كفتة '+label+withSide:'مشوي '+label+withSide,meat?'افرُم اللحم أو الدجاج قبل الطبخ إن كان قطعة كاملة. شكّله أقراصًا أو أصابع وتبّله من قائمة المقادير واشوه حتى يستوي بالكامل. '+sides+cook+' '+finish:'نشّف '+label+' وتبّله بالمختار واشوه، وقدّم المرافقات. '+cook+' '+finish],
+   ['صينية '+label+withSide,'رتّب '+label+' والخضار أو البطاط المختارة إن وجدت في صينية. اخبزها حتى تستوي، وقدّم الخبز والمكونات الباردة منفصلة. '+cook+' '+finish],
+  ];
+ }else if(is('egg')){
+  choices=[
+   ['أومليت '+label+withSide,'اخفق البيض واطبخه في مقلاة غير لاصقة حتى يتماسك بالكامل. '+sides+finish],
+   ['بيض مخفوق'+withSide,'حرّك البيض في مقلاة على نار هادئة حتى يتماسك وقدّم المرافقات. '+finish],
+   ['بيض بالفرن'+withSide,'ضع البيض في طبق فرن صغير. أضف الخضار المناسبة إذا كانت بالقائمة واخبزه حتى يتماسك. '+finish],
+  ];
+ }else if(is('plant')){
+  choices=[
+   ['يخنة '+label+withSide,'اطبخ '+label+' حسب نوعه، ثم قلّبه مع المكونات الملائمة للطبخ وقليل من ماء الطبخ. '+sides+finish],
+   ['سلطة '+label+withSide,'جهّز '+label+' حسب النوع واتركه يبرد. اجمعه مع المرافقات المناسبة للسلطة، وقدّم باقي المكونات جانبًا. '+finish],
+   ['صينية '+label+withSide,'حضّر '+label+' أولًا حسب نوعه. أدخله الفرن مع الخضار الملائمة إن وجدت، وقدّم باقي المكونات جانبًا. '+finish],
+  ];
+ }else if(is('dairy')||is('fruit')||is('nuts')){
+  choices=[
+   ['وعاء '+label+withSide,'جهّز كل مكوّن حسب نوعه وضع '+label+' بالوعاء. قطّع الفاكهة إن وجدت وقدّم المكونات المقرمشة في الآخر. '+finish],
+   ['كاسات '+label+withSide,'قسّم '+label+' والمكونات الملائمة إلى طبقات بكأس. قدّم المكونات اللي تحتاج طبخ بعد تجهيزها وبشكل منفصل. '+finish],
+   ['طبق '+label+' بأقسام'+withSide,'جهّز '+label+' وقدّمه وسط الطبق. رتّب المرافقات حوله وقدّم الإضافات بشكل منفصل. '+finish],
+  ];
+ }else if(is('starch')){
+  const potato=/بطاط/.test(label);
+  choices=[
+   [potato?label+' مشوية بالأفران':label+' على البخار'+withSide,potato?'قطّع البطاطا إلى قطع متساوية واخبزها حتى تلين من الداخل وتتحمّر. '+sides+finish:'اطبخ الحبوب أو المعكرونة بالماء حسب النوع والعبوة. صفِّ الزائد إذا لزم وقدّم المرافقات. '+finish],
+   [potato?label+' مهروسة'+withSide:'صينية '+label+withSide,potato?'اسلق البطاطا حتى تلين واهرِسها مع قليل من ماء السلق. قدّم الحصة مع المرافقات. '+finish:'اطبخ '+label+' أولًا حسب العبوة. رتبها بصينية مع المرافقات الملائمة للخبز وقدّم المكونات الباردة جانبًا. '+finish],
+   [potato?'سلطة '+label:label+' باردة'+withSide,'اطبخ '+label+' حسب نوعها واتركها تبرد. اخلطها مع المكونات الطازجة الموجودة بالقائمة، وقدّم باقي المرافقات جانبًا. '+finish],
+  ];
+ }else if(is('bread')){
+  choices=[
+   ['خبز أو حبوب '+label+withSide,'حمّص الخبز إن كان خبزًا، أو حضّر الحبوب حسب العبوة. قدّم المرافقات بالكمية المحددة. '+finish],
+   ['طبق فطور مع '+label,'جهّز '+label+' للوجبة ثم قدّم المكونات المناسبة معه بشكل منفصل. '+finish],
+   ['وجبة مسبقة مع '+label,'عبّ المرافقات بعد تجهيزها حسب نوعها. أضف الخبز أو الحبوب وقت التقديم حتى تبقى قوامها مناسبًا. '+finish],
+  ];
+ }else if(is('veg')){
+  choices=[
+   ['تقديم طازج مع '+label,'اغسل '+label+' وقطّعها، وقدّمها طازجة إذا كانت من النوع المناسب للأكل نيئًا. اطبخها أولًا إذا تطلّب نوعها ذلك. '+sides+finish],
+   ['طبق '+label+' دافئ','اطبخ '+label+' بالبخار أو بالماء إذا كانت ملائمة لذلك، وصفِّها وقدّمها دافئة. '+sides+finish],
+   ['صينية خضار مع '+label,'اخبز '+label+' مع الخضار الملائمة للفرن إن وجدت حتى تلين. قدّم الورقيات والخيار والمرافقات الباردة جانبيًا. '+finish],
+  ];
+ }else{
+  choices=[
+   ['طبق بنكهة '+label,'جهّز المكوّن الرئيسي والمرافقات حسب نوعها، ثم وزّع '+label+' على الطبق بالكمية المكتوبة. '+finish],
+   ['صينية بلمسة '+label,'اخبز المكونات المناسبة للفرن حتى تستوي. قدّم الباقي منفصلًا وأضف '+label+' حسب نوعه عند التجهيز أو عند التقديم. '+finish],
+   ['وجبة مع '+label+' على الجنب','جهّز المكونات كما في المقادير، وخلّ '+label+' منفصل لين وقت التقديم. '+finish],
+  ];
+ }
+ return choices;
+}
 function formatAzmMeal(meal){
  const items=meal.parts.map(id=>azmFoods[id]);
  const quantities=items.map(x=>x.grams+' غ '+azmFoodName(x)).join(' + ');
- const styles={grill:['مشاوي','جهّز المكوّن الرئيسي بطريقة الشوي إذا كان مناسبًا له، وقدّم المرافقات جانبًا.'],tray:['صينية بالفرن','جهّز المكونات المناسبة للخبز بصينية، وقدّم المكونات الباردة جانبًا.'],bowl:['طبق أو سلطة','رتّب المكونات المطبوخة والجاهزة في طبق، وقدّم الصلصة المختارة جانبًا إن وجدت.']};
- const style=styles[meal.style];
- const directions=(style?style[1]+' ':'')+[...new Set(items.map(x=>x.prep))].join(' ');
- return {...meal,title:meal.label+' – '+(style?style[0]+' ':'')+items.slice(0,2).map(x=>x.name).join(' مع '),detail:quantities+' | التحضير: '+directions};
+ const anchor=Number.isInteger(meal.anchor)&&items[meal.anchor]?meal.anchor:0;
+ const options=azmDishOptions(meal,anchor);
+ const dish=[0,1,2].includes(meal.dish)?meal.dish:meal.style==='tray'?2:meal.style==='grill'?1:0;
+ const [name,directions]=options[dish];
+ return {...meal,anchor,dish,title:meal.label+' – '+name,detail:quantities+' | التحضير: '+directions};
 }
 function buildAzmMealWeek(key,prefs){
  const picked=[...new Set(prefs.foods)].filter(id=>azmFoods[id]);
@@ -282,12 +357,30 @@ function azmAlternatives(week,meal,part){
   return choice&&choice.group===food.group&&!meal.parts.includes(other);
  }).slice(0,3);
 }
+
+function azmRecipeChoices(meal,index,mi){
+ return '<h5>اختَر الطبق وطريقة الطبخ</h5>'+meal.parts.map((id,anchor)=>{
+  const food=azmFoods[id];
+  if(!food)return '';
+  return `<details><summary>٣ وصفات مع ${safe(food.name)}</summary><ol>${azmDishOptions(meal,anchor).map(([name,steps],dish)=>`
+   <li><strong>${safe(name)}</strong><p>${safe(steps)}</p><button type="button" class="button secondary" onclick="setAzmDish(${index},${mi},${anchor},${dish})">${meal.anchor===anchor&&meal.dish===dish?'الوصفة الحالية':'اختَر هالطبق'}</button></li>`).join('')}</ol></details>`;
+ }).join('');
+}
+async function setAzmDish(index,mi,anchor,dish){
+ const week=getMealWeek(selectedWeek),meal=datedMeals(selectedWeek,index)[mi];
+ if(week?.status!=='draft'||!azmFoods[meal?.parts?.[anchor]]||![0,1,2].includes(dish))return;
+ const source=index===6&&week.open!==6?week.open:index,day=week.days[source];
+ day.meals[mi]=formatAzmMeal({...meal,anchor,dish});
+ day.recipe=azmDayDirections(day.meals);
+ await saveMealState();
+ render();
+}
 function azmComponentChoices(week,index){
  if(week.status!=='draft'||week.open===index)return '';
  const meals=datedMeals(selectedWeek,index);
  if(!meals.some(m=>m.parts))return '';
- return `<div class="card"><h4>بدائل المكونات من اختياراتك</h4><p class="hint">يظهر لكل مكوّن حتى ٣ بدائل من نفس القسم. إذا اخترت مكونات أقل، تظهر الخيارات المتاحة.</p>${
- meals.map((meal,mi)=>!meal.parts?'':`<details><summary>${safe(meal.title)}</summary>${meal.parts.map((id,pi)=>{
+ return `<div class="card"><h4>وصفات وبدائل من اختياراتك</h4><p class="hint">افتح الوجبة، واختر من ٣ طرق للطبخ لكل مكوّن أو بدّل مكوّن من نفس القسم.</p>${
+ meals.map((meal,mi)=>!meal.parts?'':`<details><summary>${safe(meal.title)}</summary>${azmRecipeChoices(meal,index,mi)}<h5>بدّل مكوّن</h5>${meal.parts.map((id,pi)=>{
   const food=azmFoods[id];if(!food)return '';
   const options=azmAlternatives(week,meal,pi);
   return `<label class="field">${safe(food.name)} · ${food.grams} غ<select ${options.length?'':'disabled'} onchange="setAzmMealIngredient(${index},${mi},${pi},this.value)"><option value="">${options.length?'اختر بديل':'ما فيه بديل مختار من هالقسم'}</option>${options.map(other=>`<option value="${other}">${safe(azmFoods[other].name)} · ${azmFoods[other].grams} غ</option>`).join('')}</select></label>`;
