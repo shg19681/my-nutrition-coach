@@ -71,25 +71,48 @@ function mealFoodFor(name, kind) {
   return match ? { ar: match[1], en: match[2], kcal: match[3] } : mealFoodLibrary[kind] || mealFoodLibrary.vegetables;
 }
 
-function printChefGuide() {
-  if (getMealWeek(selectedWeek)?.status !== 'approved') return;
-  const guide = window.open('', '_blank');
-  if (!guide) {
-    alert('اسمح بفتح نافذة الطباعة ثم جرّب مرة ثانية.');
-    return;
-  }
-  guide.opener = null;
-  const title = 'عزم - دليل الطباخ - ' + selectedWeek;
-  const sections = datedChefMessageSource().split(/\n\n+/).map((section, index) =>
-    '<section' + (index ? ' class="day"' : '') + '>' + safe(section) + '</section>'
-  ).join('');
-  guide.document.open();
-  guide.document.write('<!doctype html><html lang="ar" dir="rtl"><meta charset="utf-8"><title>' + safe(title) +
-    '</title><style>@page{size:A4;margin:16mm}body{font:16px/1.65 system-ui,sans-serif;color:#1a3527;max-width:44rem;margin:auto;padding:1rem}section{white-space:pre-wrap;margin:1rem 0}.day{break-inside:avoid;border-top:1px solid #a8beb0;padding-top:.6rem}@media print{button{display:none}body{padding:0}}</style>' +
-    '<h1>' + safe(title) + '</h1><button id="print">طباعة / حفظ PDF</button>' + sections + '</html>');
-  guide.document.close();
-  guide.document.getElementById('print').addEventListener('click', () => guide.print());
-  guide.print();
+function printChefGuide(){
+  if(getMealWeek(selectedWeek)?.status!=='approved'||document.getElementById('azm-chef-preview'))return;
+  const title='عزم - دليل الطباخ - '+selectedWeek;
+  const originalTitle=document.title;
+  const trigger=document.activeElement;
+  const scrollX=window.scrollX, scrollY=window.scrollY;
+  const preview=document.createElement('section');
+  preview.id='azm-chef-preview';
+  preview.dir='rtl';
+  preview.lang='ar';
+  preview.setAttribute('aria-labelledby','azm-chef-title');
+  const sections=datedChefMessageSource().split(/\n\n+/).map(section=>'<section>'+safe(section)+'</section>').join('');
+  preview.innerHTML='<style>'+
+    'body.azm-chef-preview> :not(#azm-chef-preview){display:none!important}'+
+    'body.azm-chef-preview{display:block!important;min-height:100%;background:#f4f7f3!important}'+
+    '#azm-chef-preview{display:block;max-width:49rem;margin:auto;color:#18392c;padding:0 1rem 1rem;font:16px/1.65 system-ui,sans-serif}'+
+    '#azm-chef-preview section{white-space:pre-wrap;padding:.75rem 0;border-top:1px solid #c5d8ca}'+
+    '#azm-chef-preview .azm-preview-actions{position:sticky;top:0;z-index:2;display:flex;gap:.65rem;flex-wrap:wrap;background:#f4f7f3;padding:calc(.65rem + env(safe-area-inset-top,0px)) 0 .65rem}'+
+    '#azm-chef-preview button{min-height:44px}'+
+    '@page{size:A4;margin:16mm}'+
+    '@media print{body.azm-chef-preview{background:white!important}#azm-chef-preview{max-width:none;padding:0;color:black;font:11pt/1.5 system-ui,sans-serif}#azm-chef-preview .azm-preview-actions{display:none!important}#azm-chef-preview section{break-inside:avoid}}'+
+    '</style><div class="azm-preview-actions"><button type="button" class="button secondary" data-chef-back>الرجوع للجدول</button>'+
+    '<button type="button" class="button" data-chef-print>طباعة / حفظ PDF</button></div>'+
+    '<h1 id="azm-chef-title">'+safe(title)+'</h1>'+sections;
+  const close=()=>{
+    preview.remove();
+    document.body.classList.remove('azm-chef-preview');
+    document.title=originalTitle;
+    document.removeEventListener('keydown',onKey);
+    trigger?.focus({preventScroll:true});
+    window.scrollTo(scrollX,scrollY);
+  };
+  const onKey=event=>{if(event.key==='Escape')close();};
+  const back=preview.querySelector('[data-chef-back]');
+  back.addEventListener('click',close);
+  preview.querySelector('[data-chef-print]').addEventListener('click',()=>window.print());
+  document.body.append(preview);
+  document.body.classList.add('azm-chef-preview');
+  document.title=title;
+  document.addEventListener('keydown',onKey);
+  window.scrollTo(0,0);
+  back.focus({preventScroll:true});
 }
 async function createFirstMealWeek(){
  if(Object.keys(state.mealWeeks||{}).length)return;
