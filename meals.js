@@ -8,7 +8,7 @@ function getMealWeek(key){return state.mealWeeks?.[key]||null;}
 function editWeek(key){state.mealWeeks||={};return state.mealWeeks[key]||=structuredClone(getMealWeek(key));}
 function datedMeals(key,index){const w=getMealWeek(key);if(!w||w.open===index)return [];return w.days[index===6&&w.open!==6?w.open:index]?.meals||[];}
 function mealIngredientKind(text){const t=text.trim();if(t.includes('بياض'))return 'eggwhite';if(t.includes('بيض'))return 'egg';if(t.includes('فيتا'))return 'feta';if(t.includes('خبز'))return 'bread';if(t.includes('فراولة'))return 'strawberry';if(t.includes('دجاج')||t.includes('جوجه'))return t.includes('شيش')?'chickenkebab':'chicken';if(t.includes('أرز')||t.includes('رز')||t.includes('عيش'))return 'rice';if(t.includes('سلطة'))return 'salad';if(t.includes('زيت'))return 'oliveoil';if(t.includes('روب')||t.includes('زبادي'))return 'yogurt';if(t.includes('موز'))return 'banana';if(t.includes('تمر'))return 'dates';if(t.includes('لحم موزات'))return 'lamb';if(t.includes('لحم')||t.includes('كباب'))return 'beef';if(t.includes('بطاط'))return 'potato';if(t.includes('بروكلي')||t.includes('خضار'))return 'vegetables';if(t.includes('لبنة'))return 'labneh';if(t.includes('خيار وطماطم'))return 'cucumbertomato';if(t.includes('طماطم وفلفل'))return 'pepper';if(t.includes('طماطم'))return 'tomato';if(t.includes('تفاح'))return 'apple';if(t.includes('لوز'))return 'almonds';if(t.includes('سمك')||t.includes('هامور'))return 'whitefish';if(t.includes('زرشك')||t.includes('زرشک'))return 'barberry';if(t.includes('جبن قريش'))return 'cottage';if(t.includes('دقوس'))return 'daqoos';if(t.includes('جوز'))return 'walnuts';if(t.includes('جبن قليل'))return 'lowfatcheese';if(t.includes('فطر'))return 'mushrooms';if(t.includes('كوسا'))return 'zucchini';if(t.includes('حمص'))return 'hummus';if(t.includes('روبيان'))return 'shrimp';if(t.includes('سلمون'))return 'salmon';return 'vegetables';}
-function parseMealIngredients(meal){if(Array.isArray(meal.parts)&&meal.parts.every(id=>azmFoods[id]))return meal.parts.map((id,i)=>{const food=azmFoods[id];const name=azmFoodName(food);return {id:String(i),kind:food.group,name,amount:food.grams,food:{ar:name,en:name,kcal:food.kcal}};});return String(meal.detail||'').trim().split(/\s*\|\s*التحضير\s*:/)[0].split(/\s*\+\s*/).filter(part=>part.trim()).map((part,i)=>{let m=part.match(/(\d+(?:\.\d+)?)\s*غ\s*(.*)/),amount,name;if(m){amount=Number(m[1]);name=m[2].replace(/[.،؛]$/,'').trim();}else{const c=part.match(/(\d+)\s*(.*)/);name=(c?c[2]:part).replace(/[.،؛]$/,'').trim();const k=mealIngredientKind(name);amount=c?Number(c[1])*(k==='egg'?50:k==='banana'?100:k==='apple'?150:8):k==='egg'&&/بيضت[اي]ن/.test(name)?100:k==='dates'?16:k==='banana'?100:k==='apple'?150:100;}const kind=mealIngredientKind(name);return {id:String(i),kind,name,amount,food:mealFoodFor(name,kind)};});}
+function parseMealIngredients(meal){if(Array.isArray(meal.parts)&&meal.parts.every(id=>azmFoods[id]))return meal.parts.map((id,i)=>{const food=azmFoods[id];const name=azmFoodName(food);return {id:String(i),kind:food.group,name,amount:meal.amounts?.[i]??food.grams,food:{ar:name,en:name,kcal:food.kcal}};});return String(meal.detail||'').trim().split(/\s*\|\s*التحضير\s*:/)[0].split(/\s*\+\s*/).filter(part=>part.trim()).map((part,i)=>{let m=part.match(/(\d+(?:\.\d+)?)\s*غ\s*(.*)/),amount,name;if(m){amount=Number(m[1]);name=m[2].replace(/[.،؛]$/,'').trim();}else{const c=part.match(/(\d+)\s*(.*)/);name=(c?c[2]:part).replace(/[.،؛]$/,'').trim();const k=mealIngredientKind(name);amount=c?Number(c[1])*(k==='egg'?50:k==='banana'?100:k==='apple'?150:8):k==='egg'&&/بيضت[اي]ن/.test(name)?100:k==='dates'?16:k==='banana'?100:k==='apple'?150:100;}const kind=mealIngredientKind(name);return {id:String(i),kind,name,amount,food:mealFoodFor(name,kind)};});}
 function swapKey(date,mi,ii){return `${date}-${mi}-${ii}`;}
 function mealRowsCalories(date,mi,meal,editable=true){
  const rows=parseMealIngredients(meal).map((x,ii)=>{const sw=state.mealSwaps?.[swapKey(date,mi,ii)],name=sw?.name||(appLanguage==='en'?x.food.en:x.food.ar),amount=sw?.amount??x.amount,kcal100=sw?.kcal100??x.food.kcal,kcal=Math.round(amount*kcal100/100);return {name,amount,kcal100,kcal,ii,original:x};});
@@ -189,6 +189,7 @@ const azmFoodSections=[
  ]
 ];
 
+azmFoodSections.push(['مكونات الحلويات والأطباق الجديدة','sweet','جهّز المكوّن حسب الوصفة.', 'كاكاو خام غير محلى|228|6,شوكولاتة داكنة|598|12,قرفة|247|1,خبز برجر|270|65,بهارات برياني|300|3,لومي أسود|275|3,بهارات مجبوس|300|3,زعفران|310|0.1']);
 const azmCookedGroups=new Set(['protein','fish','seafood','egg','plant','starch']);
 const azmFoods=Object.fromEntries(azmFoodSections.flatMap(([label,group,prep,list],section)=>list.split(',').map((entry,index)=>{
  const [name,kcal,grams]=entry.split('|');
@@ -216,11 +217,14 @@ function azmGeneratorCard(){
  <label class="field">اليوم المفتوح<select name="open">${weekNames.map((name,i)=>'<option value="'+i+'" '+(i===(prefs.open??6)?'selected':'')+'>'+safe(name)+'</option>').join('')}</select></label>
  <label class="field">ستايل الغدا والعشا<select name="style">${[['mix','منوّع'],['grill','مشاوي'],['tray','صواني بالفرن'],['bowl','أطباق وسلطات']].map(([id,label])=>'<option value="'+id+'" '+((prefs.style||'mix')===id?'selected':'')+'>'+label+'</option>').join('')}</select></label>
  <label class="full"><input type="checkbox" name="quick" ${prefs.quick?'checked':''}> أبي ريوق سريع</label>
+ <label class="full"><input type="checkbox" name="dessert" ${prefs.dessert?'checked':''}> أبي حلى مرتين بالأسبوع</label>
+ <label class="full"><input type="checkbox" name="food" value="${azmFoodIdByName['تمر']}" ${prefs.foods?.includes(azmFoodIdByName['تمر'])?'checked':''}> أبي تمر ضمن خيارات أكلي</label>
+ ${azmNamedRecipeMenu()}
  <div class="full"><h4>المكونات اللي تاكلها</h4>${azmFoodSections.map(([label],i)=>`<details>
  <summary>${safe(label)}</summary><div style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.5rem 0">
  <button type="button" class="button secondary" onclick="setAzmFoodGroup(this,true)">اختيار الكل</button>
  <button type="button" class="button ghost" onclick="setAzmFoodGroup(this,false)">مسح الاختيار</button></div>
- <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.4rem">${Object.entries(azmFoods).filter(([,x])=>x.section===i).map(([id,x])=>`<label><input type="checkbox" name="food" value="${id}" ${prefs.foods?.includes(id)?'checked':''}> ${safe(x.name)}</label>`).join('')}</div></details>`).join('')}</div>
+ <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.4rem">${Object.entries(azmFoods).filter(([,x])=>x.section===i&&x.name!=='تمر').map(([id,x])=>`<label><input type="checkbox" name="food" value="${id}" ${prefs.foods?.includes(id)?'checked':''}> ${safe(x.name)}</label>`).join('')}</div></details>`).join('')}</div>
  <label class="field full">عندك حساسية غذائية تحتاج مراجعة المكونات؟<select name="allergy" required><option value="">اختر</option><option value="none">لا</option><option value="review">إي</option></select></label>
  <p class="hint full">إذا عندك حساسية، راجع المكونات والملصقات وجهّز مسودة يدوية. المولّد يستخدم اختياراتك ويعرض تقديرات للحصص والسعرات.</p>
  <p class="hint full" data-plan-status role="status"></p>
@@ -314,6 +318,9 @@ function formatAzmMeal(meal){
  return {...meal,anchor,dish,title:meal.label+' – '+name,detail:quantities+' | التحضير: '+directions};
 }
 function buildAzmMealWeek(key,prefs){
+ const sweet=azmMatchedRecipes(prefs,'dessert');
+ if(prefs.dessert&&!sweet.length)return null;
+ const namedBreakfast=azmMatchedRecipes(prefs,'breakfast'),namedMain=azmMatchedRecipes(prefs,'main'),namedFish=azmMatchedRecipes(prefs,'main',true);
  const picked=[...new Set(prefs.foods)].filter(id=>azmFoods[id]);
  const pool=(...groups)=>picked.filter(id=>groups.includes(azmFoods[id].group));
  const proteins=pool('protein','seafood','plant','egg','dairy'), fish=pool('fish');
@@ -327,12 +334,17 @@ function buildAzmMealWeek(key,prefs){
  const days=Array.from({length:7},(_,day)=>{
   if(day===6)return {meals:[],recipe:''};
   const fishDay=Math.floor((day+1)*prefs.fish/6)>Math.floor(day*prefs.fish/6);
-  const main=(label,protein,n)=>make(label,[protein,pick(starch,n),pick(veg,n),pick(fat,n),pick(season,n)],prefs.style==='mix'?pick(['grill','tray','bowl'],n):prefs.style);
+  const main=(label,protein,n)=>{
+   const named=azmFoods[protein]?.group==='fish'?namedFish:namedMain;
+   const dish=pick(named,n);
+   return dish===null?make(label,[protein,pick(starch,n),pick(veg,n),pick(fat,n),pick(season,n)],prefs.style==='mix'?pick(['grill','tray','bowl'],n):prefs.style):azmNamedMeal(label,dish);
+  };
   const meals=[];
   if(prefs.meals>=3){
    const fast=breakfast.filter(id=>['dairy','egg'].includes(azmFoods[id].group));
    const base=pick(prefs.quick&&fast.length?fast:breakfast,day)||pick(proteins,day);
-   meals.push(make('الفطور',[base,pick(pool('bread'),day),pick(fruit.length?fruit:veg,day)]));
+   const dish=pick(prefs.quick?namedBreakfast.filter(id=>azmNamedRecipes[id][1]==='توست لبنة وزعتر'):namedBreakfast,day);
+   meals.push(dish===null?make('الفطور',[base,pick(pool('bread'),day),pick(fruit.length?fruit:veg,day)]):azmNamedMeal('الفطور',dish));
   }
   meals.push(main('الغداء',pick(fishDay?fish:proteins,day),day));
   if(prefs.meals===4)meals.push(main('وجبة إضافية',pick(proteins,day+1),day+1));
@@ -342,6 +354,7 @@ function buildAzmMealWeek(key,prefs){
    meals.push(make('سناك '+(i+1),[item,pick(side,day+i)]));
   }
   if(prefs.meals>=2)meals.push(main('العشاء',pick(proteins,day+2),day+2));
+  if(prefs.dessert&&(day===1||day===4))meals.push(azmNamedMeal('حلى',pick(sweet,day===1?0:1)));
   return {meals,recipe:azmDayDirections(meals)};
  });
  return {status:'draft',open:prefs.open,days,preferences:prefs};
@@ -370,7 +383,8 @@ async function setAzmDish(index,mi,anchor,dish){
  const week=getMealWeek(selectedWeek),meal=datedMeals(selectedWeek,index)[mi];
  if(week?.status!=='draft'||!azmFoods[meal?.parts?.[anchor]]||![0,1,2].includes(dish))return;
  const source=index===6&&week.open!==6?week.open:index,day=week.days[source];
- day.meals[mi]=formatAzmMeal({...meal,anchor,dish});
+ const {namedRecipe,amounts,...base}=meal;
+ day.meals[mi]=formatAzmMeal({...base,anchor,dish});
  day.recipe=azmDayDirections(day.meals);
  await saveMealState();
  render();
@@ -380,7 +394,7 @@ function azmComponentChoices(week,index){
  const meals=datedMeals(selectedWeek,index);
  if(!meals.some(m=>m.parts))return '';
  return `<div class="card"><h4>وصفات وبدائل من اختياراتك</h4><p class="hint">افتح الوجبة، واختر من ٣ طرق للطبخ لكل مكوّن أو بدّل مكوّن من نفس القسم.</p>${
- meals.map((meal,mi)=>!meal.parts?'':`<details><summary>${safe(meal.title)}</summary>${azmRecipeChoices(meal,index,mi)}<h5>بدّل مكوّن</h5>${meal.parts.map((id,pi)=>{
+ meals.map((meal,mi)=>!meal.parts?'':`<details><summary>${safe(meal.title)}</summary>${azmNamedDishPicker(meal,week,index,mi)}${azmRecipeChoices(meal,index,mi)}<h5>بدّل مكوّن</h5>${meal.parts.map((id,pi)=>{
   const food=azmFoods[id];if(!food)return '';
   const options=azmAlternatives(week,meal,pi);
   return `<label class="field">${safe(food.name)} · ${food.grams} غ<select ${options.length?'':'disabled'} onchange="setAzmMealIngredient(${index},${mi},${pi},this.value)"><option value="">${options.length?'اختر بديل':'ما فيه بديل مختار من هالقسم'}</option>${options.map(other=>`<option value="${other}">${safe(azmFoods[other].name)} · ${azmFoods[other].grams} غ</option>`).join('')}</select></label>`;
@@ -392,8 +406,10 @@ async function setAzmMealIngredient(index,mi,pi,id){
  const meal=datedMeals(selectedWeek,index)[mi];
  if(!meal?.parts||!azmAlternatives(week,meal,pi).includes(id))return;
  const source=index===6&&week.open!==6?week.open:index, day=week.days[source];
- meal.parts[pi]=id;
- day.meals[mi]=formatAzmMeal(meal);
+ const {namedRecipe,amounts,...base}=meal;
+ base.parts=[...meal.parts];
+ base.parts[pi]=id;
+ day.meals[mi]=formatAzmMeal(base);
  day.recipe=azmDayDirections(day.meals);
  await saveMealState();
  render();
@@ -405,8 +421,9 @@ async function generateAzmMealWeek(event){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(Date.parse(date)))return;
  const key=weekStart(date);
  if(getMealWeek(key)){status.textContent='هالأسبوع عندك له جدول. اختَر أسبوع ثاني أو عدّل الجدول الموجود.';return;}
- const prefs={meals:Number(f.get('meals')),snacks:Number(f.get('snacks')),fish:Number(f.get('fish')),open:Number(f.get('open')),quick:f.has('quick'),style:String(f.get('style')||'mix'),foods:f.getAll('food')};
+ const prefs={meals:Number(f.get('meals')),snacks:Number(f.get('snacks')),fish:Number(f.get('fish')),open:Number(f.get('open')),quick:f.has('quick'),dessert:f.has('dessert'),style:String(f.get('style')||'mix'),foods:f.getAll('food')};
  if(![1,2,3,4].includes(prefs.meals)||![0,1,2,3].includes(prefs.snacks)||![0,1,2,3,4,5,6].includes(prefs.fish)||!weekNames[prefs.open])return;
+ if(prefs.dessert&&!azmMatchedRecipes(prefs,'dessert').length){status.textContent='اختر مكونات حلى واحد على الأقل من قائمة الأطباق والحلويات، أو شيل علامة الحلويات.';return;}
  const draft=buildAzmMealWeek(key,prefs);
  if(!draft){status.textContent='اختياراتك ما تكفي لتجهيز هالعدد. اختَر مصادر بروتين للوجبات، وسمك إذا طلبته، ومكونات للسناك إذا اخترته.';return;}
  const goal=Number(f.get('goal'));
@@ -416,4 +433,409 @@ async function generateAzmMealWeek(event){
  selectedWeek=selectedMealDate=key;
  await saveMealState();
  render();
+}
+const azmNamedRecipes=[
+ [
+  "main",
+  "باستا دياي بصلصة الطماطم",
+  [
+   "صدر دجاج",
+   "معكرونة",
+   "صلصة طماطم سادة",
+   "ثوم"
+  ],
+  "اسلق المعكرونة وصفّها. قطّع الدياي وحمّره بمقلاة غير لاصقة حتى يصل ٧٤°م داخليًا. حرّك الثوم مع الصلصة ثم قلّب الدياي والمعكرونة فيها."
+ ],
+ [
+  "main",
+  "باستا بولونيز باللحم",
+  [
+   "لحم بقري مفروم قليل الدهن",
+   "معكرونة",
+   "صلصة طماطم سادة",
+   "بصل"
+  ],
+  "اسلق المعكرونة. ليّن البصل بقليل ماء، وأضف اللحم وفتّته بالمقلاة حتى يصل ٧١°م داخليًا. اخلطه بصلصة الطماطم واتركها تتسبك، ثم قدّمها فوق المعكرونة."
+ ],
+ [
+  "main",
+  "باستا دياي وبروكلي",
+  [
+   "صدر دجاج",
+   "معكرونة قمح كامل",
+   "بروكلي",
+   "زيت زيتون"
+  ],
+  "اسلق الباستا، وبخّر البروكلي. شوّح شرائح الدياي بالزيت حتى تصل ٧٤°م داخليًا، ثم قلّبها مع الباستا والبروكلي وقليل من ماء السلق."
+ ],
+ [
+  "main",
+  "برجر لحم مشوي",
+  [
+   "لحم بقري مفروم قليل الدهن",
+   "خبز برجر",
+   "خس",
+   "طماطم"
+  ],
+  "شكّل اللحم قرصًا واشوه حتى يصل ٧١°م داخليًا. حمّص الخبز، وحط الخس والطماطم والقرص وقدّم."
+ ],
+ [
+  "main",
+  "برجر دياي مشوي",
+  [
+   "دجاج مفروم",
+   "خبز برجر",
+   "خس",
+   "طماطم"
+  ],
+  "شكّل الدياي قرصًا واشوه حتى يصل ٧٤°م داخليًا. حمّص الخبز واجمعه مع الخس والطماطم والقرص."
+ ],
+ [
+  "main",
+  "ستيك لحم وبطاط بالفرن",
+  [
+   "ستيك بقري قليل الدهن",
+   "بطاطا",
+   "بروكلي",
+   "زيت زيتون"
+  ],
+  "قطّع البطاط واشوه بالفرن بجزء من الزيت حتى يلين. بخّر البروكلي. اشوِ الستيك بالزيت المتبقي حتى ٦٣°م على الأقل، وريّحه ٣ دقائق قبل التقطيع."
+ ],
+ [
+  "main",
+  "ستيك فيليه وكوسا",
+  [
+   "فيليه بقري",
+   "كوسا",
+   "فطر",
+   "زيت زيتون"
+  ],
+  "اشوِ الكوسا والفطر بالزيت. حمّر الفيليه من الجهتين حتى يصل ٦٣°م على الأقل، وريّحه ٣ دقائق وقدّم الخضار بجانبه."
+ ],
+ [
+  "main",
+  "ستيك دياي وبطاط مهروس",
+  [
+   "صدر دجاج",
+   "بطاطا",
+   "فاصوليا خضراء",
+   "ليمون"
+  ],
+  "افتح صدر الدياي حتى يتساوى السمك وادهنه بالليمون. اشوه حتى يصل ٧٤°م داخليًا. اسلق البطاط واهرِسه بقليل من ماء السلق. بخّر الفاصوليا وقدّم."
+ ],
+ [
+  "main",
+  "برياني دياي",
+  [
+   "فخذ دجاج منزوع الجلد",
+   "أرز بسمتي",
+   "بصل",
+   "بهارات برياني",
+   "روب يوناني سادة"
+  ],
+  "ليّن البصل بقليل ماء، وقلّبه مع البهارات والروب، ثم أضف الدياي واطبخه حتى يصل ٧٤°م داخليًا. اسلق الأرز إلى قرب النضج، صفّه وحطّه فوق الدياي، وغطِّ القدر على نار هادئة حتى يكمل الأرز."
+ ],
+ [
+  "main",
+  "برياني لحم غنم",
+  [
+   "لحم غنم قليل الدهن",
+   "أرز بسمتي",
+   "بصل",
+   "بهارات برياني",
+   "روب يوناني سادة"
+  ],
+  "اطبخ الغنم مع البصل والبهارات وقليل ماء حتى يطرى. حرّك الروب وأضفه، ثم غطِّ اللحم بطبقة أرز مسلوق إلى قرب النضج وبخّرهم على نار هادئة لين يستوي الأرز."
+ ],
+ [
+  "main",
+  "برياني لحم بقري",
+  [
+   "لحم بقري شرائح",
+   "أرز بسمتي",
+   "بصل",
+   "بهارات برياني",
+   "روب يوناني سادة"
+  ],
+  "اطبخ الشرائح بالبصل والبهارات وقليل ماء حتى تطرى. أضف الروب، ثم صفّ الأرز المسلوق جزئيًا وحطّه فوق اللحم واكمل طبخه مغطّى."
+ ],
+ [
+  "main",
+  "مجبوس دياي",
+  [
+   "فخذ دجاج منزوع الجلد",
+   "أرز بسمتي",
+   "بصل",
+   "لومي أسود",
+   "بهارات مجبوس"
+  ],
+  "اطبخ الدياي والبصل واللومي والبهارات بالماء حتى يصل الدياي ٧٤°م داخليًا. ارفع القطع واطبخ الأرز بجزء من المرق المصفّى. قدّم الدياي فوق الأرز."
+ ],
+ [
+  "main",
+  "مجبوس لحم غنم",
+  [
+   "لحم غنم قليل الدهن",
+   "أرز بسمتي",
+   "بصل",
+   "لومي أسود",
+   "بهارات مجبوس"
+  ],
+  "اطبخ اللحم مع البصل واللومي والبهارات حتى يطرى. ارفع اللحم وصفّ المرق وأزل الدهون الزائدة. اطبخ الأرز بالمرق وقدّم حصة اللحم فوقه."
+ ],
+ [
+  "main",
+  "كفتة غنم بالأرز",
+  [
+   "لحم غنم قليل الدهن",
+   "أرز بسمتي",
+   "بصل",
+   "بقدونس"
+  ],
+  "افرُم لحم الغنم قبل الطبخ، واعصر البصل واخلطه مع اللحم والبقدونس. شكّل أصابع واشوها حتى تصل ٧١°م داخليًا. قدّمها مع الأرز المطبوخ."
+ ],
+ [
+  "main",
+  "جوجه كباب بالزعفران",
+  [
+   "صدر دجاج",
+   "أرز بسمتي",
+   "روب يوناني سادة",
+   "زعفران",
+   "ليمون"
+  ],
+  "انقع الزعفران بقليل ماء. تبّل مكعبات الدياي بالروب والليمون وجزء من الزعفران، ثم اشوها حتى تصل ٧٤°م داخليًا. استخدم الزعفران المتبقي بالأرز."
+ ],
+ [
+  "main",
+  "راب شاورما دياي",
+  [
+   "صدر دجاج",
+   "خبز تورتيلا",
+   "روب يوناني سادة",
+   "ثوم",
+   "خيار",
+   "بابريكا"
+  ],
+  "تبّل شرائح الدياي بالبابريكا واشوها حتى تصل ٧٤°م داخليًا. اخلط الروب والثوم للصوص، وحط الخيار والدياي والصوص بالتورتيلا ولفّها."
+ ],
+ [
+  "main",
+  "سلمون بالليمون مع كينوا",
+  [
+   "سلمون",
+   "كينوا",
+   "بروكلي",
+   "ليمون"
+  ],
+  "اخبز السلمون مع الليمون حتى يصل ٦٣°م داخليًا. اطبخ الكينوا حسب العبوة، وبخّر البروكلي وقدّمهما بجانبه."
+ ],
+ [
+  "main",
+  "هامور بالفرن مع بطاط",
+  [
+   "هامور",
+   "بطاطا",
+   "كوسا",
+   "ليمون"
+  ],
+  "ابدأ بخبز البطاط المقطّعة حتى تلين. أضف الكوسا والهامور بالليمون واكمل الخبز حتى يصل السمك ٦٣°م داخليًا."
+ ],
+ [
+  "main",
+  "مرق بامية باللحم",
+  [
+   "لحم بقري شرائح",
+   "بامية",
+   "صلصة طماطم سادة",
+   "ثوم",
+   "أرز بسمتي"
+  ],
+  "اطبخ اللحم بالماء حتى يطرى. أضف الثوم والصلصة والبامية واتركها تتسبك على نار هادئة. قدّم المرق مع الأرز المطبوخ."
+ ],
+ [
+  "main",
+  "سلطة دياي وكينوا",
+  [
+   "صدر دجاج",
+   "كينوا",
+   "خيار",
+   "طماطم",
+   "ليمون"
+  ],
+  "اشوِ الدياي حتى يصل ٧٤°م داخليًا وقطّعه. اطبخ الكينوا واتركها تهدأ، ثم قلّبها بالخيار والطماطم والليمون وحط الدياي فوقها."
+ ],
+ [
+  "main",
+  "سلطة عدس بالأفوكادو",
+  [
+   "عدس",
+   "أفوكادو",
+   "جرجير",
+   "ليمون"
+  ],
+  "اسلق العدس حتى يلين مع بقاء الحب متماسكًا. صفّه وبرّده، ثم قلّبه مع الجرجير والأفوكادو والليمون."
+ ],
+ [
+  "breakfast",
+  "توست لبنة وزعتر",
+  [
+   "ساور دو",
+   "لبنة خفيفة",
+   "زعتر جاف",
+   "خيار"
+  ],
+  "حمّص الساور دو. افرد اللبنة ورش الزعتر وقدّم الخيار على الجنب."
+ ],
+ [
+  "breakfast",
+  "شكشوكة بالطماطم",
+  [
+   "بيض كامل",
+   "طماطم",
+   "فلفل رومي",
+   "بصل"
+  ],
+  "ليّن البصل والفلفل بقليل ماء، وأضف الطماطم حتى تتسبك. اكسر البيض فوقها وغطِّ المقلاة حتى يتماسك البياض والصفار."
+ ],
+ [
+  "dessert",
+  "كاسات روب وتمر وكاكاو",
+  [
+   "روب يوناني سادة",
+   "تمر",
+   "كاكاو خام غير محلى"
+  ],
+  "شيل نوى التمر واهرِسه بقليل ماء. اخلط الكاكاو بالروب، ثم رتّب الروب والتمر بطبقات في كاسة وبرّدها."
+ ],
+ [
+  "dessert",
+  "كرات تمر وشوفان",
+  [
+   "تمر",
+   "شوفان جاف",
+   "كاكاو خام غير محلى"
+  ],
+  "شيل النوى، واهرِس التمر واعجنه مع الشوفان والكاكاو. شكّل كرات صغيرة وبرّدها حتى تتماسك."
+ ],
+ [
+  "dessert",
+  "بودينغ شيا بالموز",
+  [
+   "حليب قليل الدسم",
+   "بذور شيا",
+   "موز"
+  ],
+  "اهرِس الموز واخلطه بالحليب والشيا. حرّك مرة ثانية بعد ما يبدأ يتماسك، وخلّه بالثلاجة لين يصير قوامه بودينغ."
+ ],
+ [
+  "dessert",
+  "كاسات فراولة وروب",
+  [
+   "فراولة",
+   "روب يوناني سادة"
+  ],
+  "اهرِس نص الفراولة وقطّع الباقي. رتّب المهروس والروب وقطع الفراولة بطبقات وقدّمها باردة."
+ ],
+ [
+  "dessert",
+  "تفاح مخبوز بالقرفة",
+  [
+   "تفاح",
+   "قرفة"
+  ],
+  "قطّع التفاح بعد إزالة القلب، ورش القرفة وأضف قليل ماء في صينية صغيرة. اخبزه حتى يلين وقدّمه دافئ."
+ ],
+ [
+  "dessert",
+  "موز وشوكولاتة داكنة",
+  [
+   "موز",
+   "شوكولاتة داكنة"
+  ],
+  "ذوّب الشوكولاتة برفق، وغطِّ أطراف شرائح الموز بطبقة خفيفة. برّدها لين تتماسك الشوكولاتة."
+ ],
+ [
+  "dessert",
+  "كوكيز موز وشوفان",
+  [
+   "موز",
+   "شوفان جاف",
+   "شوكولاتة داكنة"
+  ],
+  "اهرِس الموز، واخلطه بالشوفان والشوكولاتة المفرومة. شكّل دوائر صغيرة على ورق خبز واخبزها حتى تتماسك وتتحمّر الأطراف."
+ ],
+ [
+  "dessert",
+  "سلطة فواكه بالتمر",
+  [
+   "تمر",
+   "تفاح",
+   "فراولة"
+  ],
+  "شيل نوى التمر وقطّعه مع التفاح والفراولة. قلّبهم وقدّم الكمية باردة."
+ ]
+];
+const azmFoodIdByName=Object.fromEntries(Object.entries(azmFoods).map(([id,food])=>[food.name,id]));
+const azmRecipeParts=azmNamedRecipes.map(([, , names])=>names.map(name=>azmFoodIdByName[name]));
+function azmMatchedRecipes(prefs,slot,fishOnly=false){
+ const selected=new Set(prefs.foods||[]);
+ return azmNamedRecipes.flatMap(([type],id)=>{
+  const parts=azmRecipeParts[id];
+  return type===slot&&parts.every(part=>selected.has(part))&&(slot!=='main'||(azmFoods[parts[0]].group==='fish')===fishOnly)?[id]:[];
+ });
+}
+function azmNamedMeal(label,id){
+ const [,name,,method]=azmNamedRecipes[id];
+ const parts=azmRecipeParts[id];
+ const dessert=azmNamedRecipes[id][0]==='dessert';
+ const amounts=parts.map(key=>{
+  const food=azmFoods[key];
+  if(dessert&&food.name==='شوفان جاف')return 20;
+  if(dessert&&food.group==='dairy')return 120;
+  if(dessert&&food.group==='fruit'&&food.name!=='تمر')return Math.min(food.grams,100);
+  return food.grams;
+ });
+ const quantities=parts.map((key,i)=>amounts[i]+' غ '+azmFoodName(azmFoods[key])).join(' + ');
+ return {label,parts,amounts,namedRecipe:id,title:label+' – '+name,detail:quantities+' | التحضير: '+method};
+}
+function azmNamedRecipeMenu(){
+ return `<details class="full"><summary><strong>شوف قائمة الأطباق والحلويات</strong></summary><p class="hint">تقدر تضيف مكونات طبق لقائمتك بضغطة. للحلويات فعّل خيار الحلويات فوق.</p>
+ ${[['main','أطباق الغدا والعشا'],['breakfast','الريوق'],['dessert','الحلويات']].map(([slot,label])=>`<details><summary>${label}</summary><ul>${azmNamedRecipes.map(([type,name,names],id)=>type===slot?`<li><b>${safe(name)}</b> · ${safe(names.join('، '))} <button type="button" class="button ghost" onclick="addAzmRecipeFoods(this,${id})">اختَر مكوناته</button></li>`:'').join('')}</ul></details>`).join('')}</details>`;
+}
+function addAzmRecipeFoods(button,id){
+ const selected=new Set(azmRecipeParts[id]||[]);
+ for(const input of button.form.querySelectorAll('input[name="food"]'))if(selected.has(input.value))input.checked=true;
+ button.textContent='انضافت المكونات';
+}
+function azmRecipeSlot(meal){
+ if(meal.label==='حلى')return 'dessert';
+ if(meal.label==='الفطور')return 'breakfast';
+ if(/سناك/.test(meal.label))return 'snack';
+ return 'main';
+}
+function azmDraftNamedOptions(meal,week){
+ const slot=azmRecipeSlot(meal);
+ const fish=azmFoods[meal.parts[0]]?.group==='fish';
+ return azmMatchedRecipes(week.preferences||{},slot,fish);
+}
+async function chooseAzmNamedDish(index,mi,id){
+ const week=getMealWeek(selectedWeek);
+ const meal=datedMeals(selectedWeek,index)[mi];
+ if(week?.status!=='draft'||!meal?.parts||!azmDraftNamedOptions(meal,week).includes(id))return;
+ const source=index===6&&week.open!==6?week.open:index,day=week.days[source];
+ day.meals[mi]=azmNamedMeal(meal.label,id);
+ day.recipe=azmDayDirections(day.meals);
+ await saveMealState();
+ render();
+}
+
+function azmNamedDishPicker(meal,week,index,mi){
+ const options=azmDraftNamedOptions(meal,week);
+ if(!options.length)return '';
+ return `<label class="field">بدّل إلى طبق كامل من اختياراتك
+  <select onchange="if(this.value!=='')chooseAzmNamedDish(${index},${mi},Number(this.value))">
+   <option value="">اختَر طبق</option>
+   ${options.map(id=>`<option value="${id}" ${meal.namedRecipe===id?'selected':''}>${safe(azmNamedRecipes[id][1])}</option>`).join('')}
+  </select></label>`;
 }
