@@ -147,18 +147,14 @@ function insightWeeklyCard(){
 }
 function insightOpenMealPlan(key){selectedWeek=key;selectedMealDate=key;go('food');}
 async function insightPrepareNextMealWeek(){
- const target=addDate(weekStart(dateNow()),7);
- if(!getMealWeek(target)){
-  const current=weekStart(dateNow());let sourceKey=getMealWeek(current)?current:null;
-  if(!sourceKey){sourceKey=Object.keys(state.mealWeeks||{}).sort().reverse().find(k=>getMealWeek(k)?.status==='approved')||'2026-11-15';}
-  const source=getMealWeek(sourceKey);
-  if(source){state.mealWeeks||={};state.mealWeeks[target]=structuredClone(source);state.mealWeeks[target].status='draft';await saveMealState();}
- }
- insightOpenMealPlan(target);
+ const key=addDate(weekStart(dateNow()),7),saved=azmSavedFoodPreferences();
+ if(getMealWeek(key)||!saved){insightOpenMealPlan(key);return;}
+ const status=document.querySelector('[data-insight-plan-status]');
+ if(await azmCreateWeeklyDraft(key,saved,status,false))insightOpenMealPlan(key);
 }
 function insightWeeklyMealPlan(){
  const key=addDate(weekStart(dateNow()),7),week=getMealWeek(key),end=addDate(key,6);
- if(!week)return `<div class="card insight-meal-plan"><h3>${insightCopy('جدول أكل الأسبوع القادم','Next week’s meal plan')} · <bdi dir="ltr">${safe(key)} — ${safe(end)}</bdi></h3><p>${insightCopy('بعد مراجعة تحليلك، جهّز مسودة جدول الأسبوع القادم لمراجعتها هنا في صفحة الغذاء. تبدأ المسودة بنسخة من آخر جدول محفوظ حتى تعدّلها حسب النتيجة.','After reviewing your analysis, prepare next week’s meal draft in the Food page. It starts as a copy of the latest saved plan for you to review and adjust.')}</p><button class="button" onclick="insightPrepareNextMealWeek()">${insightCopy('تجهيز مسودة ومراجعتها','Prepare and review a draft')}</button><p class="hint">${insightCopy('المسودة غير معتمدة ولا تُرسل للطباخ حتى تراجعها وتعتمدها.','The draft is not approved or sent to the cook until you review and approve it.')}</p></div>`;
+ if(!week)return `<div class="card insight-meal-plan"><h3>${insightCopy('جدول أكل الأسبوع القادم','Next week’s meal plan')} · <bdi dir="ltr">${safe(key)} — ${safe(end)}</bdi></h3><p>${insightCopy('جهّز مسودة الأسبوع القادم باستخدام تفضيلاتك وآخر سجلاتك.','Prepare next week’s draft using your preferences and recent logs.')}</p><p class="hint" role="status" data-insight-plan-status></p><button class="button" onclick="insightPrepareNextMealWeek()">${insightCopy('تجهيز مسودة ومراجعتها','Prepare and review a draft')}</button><p class="hint">${insightCopy('المسودة غير معتمدة ولا تُرسل للطباخ حتى تراجعها وتعتمدها.','The draft is not approved or sent to the cook until you review and approve it.')}</p></div>`;
  const status=week.status==='approved'?insightCopy('معتمد','Approved'):insightCopy('مسودة للمراجعة','Draft for review');
  const days=weekNames.map((name,i)=>{const date=addDate(key,i),source=azmSourceIndex(week,i),recipe=azmIsOpen(week,i)?'':week.days?.[source]?.recipe||'';return `<section class="insight-meal-day"><h4>${safe(tr(name))} · <bdi dir="ltr">${safe(date)}</bdi></h4>${datedMealRows(key,i,false)}${recipe?`<details><summary>${insightCopy('طريقة التحضير والتتبيلة','Cooking method and marinade')}</summary><p style="white-space:pre-wrap">${safe(tr(recipe))}</p></details>`:''}</section>`;}).join('');
  return `<div class="card insight-meal-plan"><div class="rowbetween"><h3>${insightCopy('جدول أكل الأسبوع القادم','Next week’s meal plan')} · <bdi dir="ltr">${safe(key)} — ${safe(end)}</bdi></h3><span class="tag">${status}</span></div><p>${week.status==='approved'?insightCopy('راجع الوجبات والكميات أدناه. بعد المراجعة افتح صفحة الغذاء لرسالة الطباخ الجاهزة في واتساب.','Review the meals and portions below. Then open the Food page to prepare the WhatsApp message for your cook.'):insightCopy('راجع الوجبات والكميات أدناه، وعدّل ما يحتاج تعديل في صفحة الغذاء ثم اعتمد الجدول لإتاحة رسالة الطباخ.','Review the meals and portions below. Edit anything needed in the Food page, then approve the plan to enable the cook’s message.')}</p>${days}<button class="button secondary" onclick="insightOpenMealPlan('${safe(key)}')">${insightCopy('فتح صفحة الغذاء للمراجعة والمشاركة','Open Food to review and share')}</button><p class="hint">${insightCopy('خطة المسودة المنسوخة تحتاج مراجعتك؛ التحليل لا يغيّر وجباتك تلقائياً.','A copied draft needs your review; the analysis does not change meals automatically.')}</p></div>`;
