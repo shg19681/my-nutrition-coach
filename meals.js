@@ -231,12 +231,12 @@ function azmGeneratorCard(){
  const key=azmNextMealWeek();
  const saved=azmSavedFoodPreferences();
  const prefs=saved||Object.entries(state.mealWeeks||{}).sort(([a],[b])=>b.localeCompare(a)).find(([,w])=>w.preferences)?.[1].preferences||{};
- const quick=saved?`<div class="card"><h3>مسودة الأسبوع</h3><p>${safe(azmProgressSummary(azmMealProgress(saved,key)))}</p>
+ const quick=saved?`<div class="card"><h3>مسودة الأسبوع</h3><p class="notice"><strong>الوزن والقياسات</strong> · سجّل وزنك وقياساتك مرة بالأسبوع على الأقل، عشان عزم يجهّز لك جدول أكل أنسب حسب تقدّمك.</p><p>${safe(azmProgressSummary(azmMealProgress(saved,key)))}</p>
  <form class="formGrid" onsubmit="generateSavedAzmWeek(event)">
  <label class="field">الأسبوع اللي تبيه<input type="date" name="week" required value="${safe(key)}"></label>
  <p class="hint full" data-plan-status role="status"></p><button class="button full" type="submit">جهّز المسودة</button></form></div>`:'';
  return `${quick}<details class="card" ${saved?'':'open'}><summary><strong>${saved?'عدّل معلوماتي وتفضيلاتي':'إعداد جدول الأكل لأول مرة'}</strong></summary>
- <p>اختَر شنو تاكل. أي مكوّن ما تختاره ما يدخل بجدولك أو بدائله. الحصص بداية عامة وتقدر تعدّلها من محرّر اليوم.</p>
+ <p class="notice"><strong>الوزن والقياسات</strong> · سجّل وزنك وقياساتك مرة بالأسبوع على الأقل، عشان عزم يجهّز لك جدول أكل أنسب حسب تقدّمك.</p><p>اختَر شنو تاكل. أي مكوّن ما تختاره ما يدخل بجدولك أو بدائله. الحصص بداية عامة وتقدر تعدّلها من محرّر اليوم.</p>
  ${azmFoodCardStyles}
  <form class="formGrid azm-food-form" onsubmit="generateAzmMealWeek(event)" onchange="updateAzmFoodCards(this); updateAzmWeekFields(this)">
  ${saved?'':`<label class="field">الأسبوع اللي تبيه<input type="date" name="week" required value="${safe(key)}"></label>`}
