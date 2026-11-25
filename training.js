@@ -1030,6 +1030,7 @@ function azmGymTargetHtml(row,group){
  return `<figure style="margin:0;min-width:118px"><img width="118" height="132" loading="lazy" src="${azmGymMap(primary,secondary)}" alt="${safe(labels(primary))}" style="display:block;object-fit:contain"><figcaption><small>الأمام · الخلف<br>الأساسية: ${safe(labels(primary))}${secondary.length?'<br>المساندة: '+safe(labels(secondary)):''}</small></figcaption></figure>`;
 }
 const azmGymDayDrafts=new Map();
+const azmGymIntroSessions=7;
 const azmGymFullBody=['Leg press','Chest press','Seated cable row','Seated leg curl','Dead bug'];
 const azmGymRoutineRows={
  'الصدر':['Chest press','Incline chest press','Pec deck fly'],
@@ -1058,19 +1059,12 @@ function azmGymChangeExperience(select){
  if(!select.value)return;
  const profile=azmGymProfile();
  profile.mode=select.value;
- azmGymSaveProfile(profile);
-}
-function azmGymSetIntroDays(select){
- const days=Number(select.value);
- if(!Number.isInteger(days)||days<1||days>7)return;
- const profile=azmGymProfile();
- profile.days=days;
- profile.start=profile.start||dateNow();
+ if(profile.mode==='new'&&!profile.start)profile.start=dateNow();
  azmGymSaveProfile(profile);
 }
 function azmGymIntroProgress(profile,date,today=dateNow(),sessions=state.training||{}){
- const days=Number(profile.days)||0;
- if(profile.mode!=='new'||!days||!profile.start||date<profile.start)return {remaining:0,done:0,completedToday:false};
+ const days=azmGymIntroSessions;
+ if(profile.mode!=='new'||!profile.start||date<profile.start)return {remaining:0,done:0,completedToday:false};
  const recorded=Object.keys(sessions).filter(day=>sessions[day].status==='trained'&&sessions[day].completed&&(sessions[day].exercises||[]).length);
  const completed=new Set([...(profile.completedDays||[]),...recorded].filter(day=>day>=profile.start&&day<=date&&day<=today&&sessions[day]?.status!=='rest'));
  return {remaining:Math.max(0,days-completed.size),done:Math.min(days,completed.size),completedToday:completed.has(date)};
@@ -1146,9 +1140,8 @@ function azmGymSelectCardio(select){
 function azmGymPlanner(){
  const date=trainingDate||dateNow(),profile=azmGymProfile(),draft=azmGymDraft(date);
  const intro=azmGymIntroProgress(profile,date),firstWeek=intro.remaining>0;
- const needsDays=profile.mode==='new'&&!profile.days;
  const isRest=sessionFor(date).status==='rest';
- const canPlan=profile.mode&&!needsDays;
+ const canPlan=Boolean(profile.mode);
  const showPlan=canPlan&&!isRest;
  const groups=Object.keys(azmGymCatalog);
  return `<details class="card" ${azmGymPlannerOpen?'open':''} ontoggle="azmGymPlannerOpen=this.open"><summary><strong>مكتبة التمارين · جهّز حصة النادي</strong></summary>
@@ -1159,13 +1152,12 @@ function azmGymPlanner(){
  <option value="new" ${profile.mode==='new'?'selected':''}>إي، أول مرة</option>
  <option value="experienced" ${profile.mode==='experienced'?'selected':''}>لا، تمرنت من قبل</option>
  </select></div>
- ${profile.mode==='new'? `<label class="field full">كم يوم تبي تتمرن بالأسبوع الأول؟<select onchange="azmGymSetIntroDays(this)"><option value="">اختَر العدد</option>${Array.from({length:7},(_,i)=>`<option value="${i+1}" ${profile.days===i+1?'selected':''}>${fmt(i+1)}</option>`).join('')}</select></label>`:''}
  ${canPlan?`<div class="flex full" aria-label="حالة اليوم">
  <button type="button" class="button ${isRest?'secondary':''}" aria-pressed="${!isRest}" onclick="if(this.getAttribute('aria-pressed')==='false')setTrainingStatus('trained')">تمرين</button>
  <button type="button" class="button ${isRest?'':'secondary'}" aria-pressed="${isRest}" onclick="if(this.getAttribute('aria-pressed')==='false')setTrainingStatus('rest')">راحة</button></div>
  ${isRest?'<p class="hint full">اليوم راحة.</p>':''}`:''}
  ${showPlan?`
- ${firstWeek?`<p class="full hint">أسبوعك الأول · خلصت ${fmt(intro.done)} من ${fmt(profile.days)} حصص جسم كامل. وزّع الحصص على الأيام اللي تناسبك وحط راحة بين حصص المقاومة قدر الإمكان.</p>`:`<fieldset class="full musclePicker"><legend>نوع تمرين اليوم</legend><p class="hint">تقدر تختار أكثر من نوع وتطلع لك حصة وحدة.</p><div class="flex">${Object.keys(azmGymRoutineRows).map(type=>`<button type="button" class="button ${draft.types.includes(type)?'':'secondary'}" data-type="${safe(type)}" aria-pressed="${draft.types.includes(type)}" onclick="azmGymSelectType(this)">${safe(type)}</button>`).join('')}</div></fieldset>`}
+ ${firstWeek?`<p class="full hint">مرحلة البداية · خلصت ${fmt(intro.done)} من ${fmt(azmGymIntroSessions)} حصص جسم كامل. أيام الراحة ما تنحسب. بعد الحصة السابعة تقدر تختار أقسام الجسم.</p>`:`<fieldset class="full musclePicker"><legend>نوع تمرين اليوم</legend><p class="hint">تقدر تختار أكثر من نوع وتطلع لك حصة وحدة.</p><div class="flex">${Object.keys(azmGymRoutineRows).map(type=>`<button type="button" class="button ${draft.types.includes(type)?'':'secondary'}" data-type="${safe(type)}" aria-pressed="${draft.types.includes(type)}" onclick="azmGymSelectType(this)">${safe(type)}</button>`).join('')}</div></fieldset>`}
  <div class="full" data-gym-plan>${azmGymPlanHtml(draft,firstWeek,profile.mode==='new')}</div>
  ${firstWeek&&date<=dateNow()?(intro.completedToday?'<p class="hint full">حسبنا لك حصة الجسم الكامل لهذا اليوم.</p>':'<div class="full"><button type="button" class="button" onclick="azmGymCompleteIntro()">أكملت حصة الجسم الكامل</button></div>'):''}
  <section class="full" aria-labelledby="gymCustomTitle">
