@@ -886,11 +886,21 @@ const azmGymDirectGuides={
  'Dead bug':['فيديو Dead Bug من NASM','https://www.youtube.com/watch?v=bxn9FBrt4-A'],
  'Indoor rowing':['فيديو طريقة التجديف من Concept2','https://www.concept2.com/training/rowing-technique'],
 };
+const azmGymVideoIds={
+ 'Chest press':'bnD0pj3dx9c',
+ 'Incline chest press':'Vvz1iys3IF8',
+ 'Leg press':'cDGOn-yfKJA',
+ 'Seated leg curl':'G5iP_YcDQdE',
+ 'Plank':'mwlp75MS6Rg',
+ 'Dead bug':'bxn9FBrt4-A',
+ 'Indoor rowing':'4zWu1yuJ0_g'
+};
 function azmGymVideo(row){
- const [,english]=row, direct=azmGymDirectGuides[english];
+ const [,english]=row, id=azmGymVideoIds[english];
+ const direct=id?['شاهد فيديو التمرين','https://www.youtube.com/watch?v='+id]:azmGymDirectGuides[english];
  const query=encodeURIComponent(english+' exercise technique '+(row[2].startsWith('جهاز')?'Panatta Technogym':'NASM ACE'));
  const link=(label,url)=>'<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+safe(label)+'</a>';
- return (direct?link(...direct)+' · ':'')+link('بحث فيديو لهذا التمرين','https://www.youtube.com/results?search_query='+query);
+ return (direct?link(...direct)+' · ':'')+link('ابحث عن فيديو للتمرين','https://www.youtube.com/results?search_query='+query);
 }
 const azmGymMuscles={
  chest:['الصدر',0,[[49,65],[42,52],[28,55],[28,72],[43,76]]],
@@ -1117,6 +1127,26 @@ function azmGymPlan(draft,firstWeek,introLevel){
  const time=easy?'٨–١٢':legs?'١٠–١٥':moves.length?'١٢–٢٠':'١٥–٢٥';
  return {moves,cardio,time,legs,easy,active:firstWeek||routines.length>0};
 }
+function azmGymPreviewVideo(form){
+ const f=form.elements, name=f.gymCustomName.value.trim(), device=f.gymCustomDevice.value.trim();
+ const preview=form.querySelector('[data-gym-video-preview]');
+ preview.hidden=!name;
+ if(!name){preview.replaceChildren();return;}
+ const candidates=azmGymCatalog[f.gymCustomGroup.value]||[];
+ const row=candidates.find(row=>row[0]===name||row[1].toLowerCase()===name.toLowerCase())||[name,name,device];
+ const id=azmGymVideoIds[row[1]];
+ preview.innerHTML='<div class="flex">'+(id?'<button type="button" class="button secondary" data-video-id="'+id+'" onclick="azmGymPlayVideo(this)">شغّل الفيديو هنا</button>':'')+azmGymVideo(row)+'</div>';
+}
+function azmGymPlayVideo(button){
+ const preview=button.closest('[data-gym-video-preview]');
+ if(preview.querySelector('iframe'))return;
+ const video=document.createElement('iframe');
+ video.title='شرح طريقة أداء التمرين';
+ video.src='https://www.youtube-nocookie.com/embed/'+button.dataset.videoId;
+ video.style.cssText='display:block;width:100%;max-width:560px;aspect-ratio:16/9;height:auto;border:0;margin-top:10px';
+ video.allowFullscreen=true;
+ preview.append(video);
+}
 function azmGymCustomPick(select){
  const f=select.form,group=f.gymCustomGroup.value;
  if(select===f.gymCustomGroup){
@@ -1133,6 +1163,7 @@ function azmGymCustomPick(select){
   f.gymCustomDevice.value=match?.[1]||'';
   f.gymCustomDeviceChoice.value=f.gymCustomDevice.value;
  }else if(select===f.gymCustomDeviceChoice&&select.value)f.gymCustomDevice.value=select.value;
+ azmGymPreviewVideo(form);
 }
 function azmGymChangeDraft(button,action,index){
  const form=button.closest('form'),draft=azmGymDraft(),f=form.elements;
@@ -1174,6 +1205,7 @@ function azmGymChangeDraft(button,action,index){
   f.gymCustomDevice.value='';
   f.gymCustomNameChoice.value='';
   f.gymCustomDeviceChoice.value='';
+  azmGymPreviewVideo(form);
  }
  azmGymSaveDraft(draft);
  azmGymRefreshPlan(form);
@@ -1227,8 +1259,9 @@ function azmGymPlanner(){
  <div class="sectionHead"><h2 id="gymCustomTitle">أضف تمرين من عندك</h2></div>
  <div class="formGrid">
  <div class="field full"><label for="gymCustomGroup">قسم التمرين</label><select id="gymCustomGroup" name="gymCustomGroup" onchange="azmGymCustomPick(this)"><option value="">اختر قسم من المكتبة</option>${groups.map(group=>`<option>${safe(group)}</option>`).join('')}</select></div>
- <div class="field"><label for="gymCustomNameChoice">اختر اسم التمرين</label><select id="gymCustomNameChoice" name="gymCustomNameChoice" onchange="azmGymCustomPick(this)"><option value="">اختر تمريناً</option></select><input id="gymCustomName" name="gymCustomName" maxlength="100" aria-label="اسم التمرين" placeholder="أو اكتب اسم التمرين"></div>
- <div class="field"><label for="gymCustomDeviceChoice">اختر الجهاز أو الأداة</label><select id="gymCustomDeviceChoice" name="gymCustomDeviceChoice" onchange="azmGymCustomPick(this)"><option value="">اختر جهازاً أو أداة</option></select><input id="gymCustomDevice" name="gymCustomDevice" maxlength="100" aria-label="اسم الجهاز أو الأداة" placeholder="أو اكتب اسم الجهاز (اختياري)"></div>
+ <div class="field"><label for="gymCustomNameChoice">اختر اسم التمرين</label><select id="gymCustomNameChoice" name="gymCustomNameChoice" onchange="azmGymCustomPick(this)"><option value="">اختر تمريناً</option></select><input id="gymCustomName" name="gymCustomName" oninput="azmGymPreviewVideo(this.form)" maxlength="100" aria-label="اسم التمرين" placeholder="أو اكتب اسم التمرين"></div>
+ <div class="field"><label for="gymCustomDeviceChoice">اختر الجهاز أو الأداة</label><select id="gymCustomDeviceChoice" name="gymCustomDeviceChoice" onchange="azmGymCustomPick(this)"><option value="">اختر جهازاً أو أداة</option></select><input id="gymCustomDevice" name="gymCustomDevice" oninput="azmGymPreviewVideo(this.form)" maxlength="100" aria-label="اسم الجهاز أو الأداة" placeholder="أو اكتب اسم الجهاز (اختياري)"></div>
+ <div class="full" data-gym-video-preview hidden></div>
  <div data-gym-cardio-inputs hidden><label class="field">مدة الكارديو بالدقايق<input name="gymCustomMinutes" type="number" min="1" max="240" step="1"></label></div>
  <div data-gym-resistance-inputs><label for="gymCustomWeight">الوزن بالكجم (اختياري)</label><input id="gymCustomWeight" name="gymCustomWeight" type="number" min="0" max="1000" step="0.5"></div>
  <div data-gym-resistance-inputs><label for="gymCustomSets">الجولات</label><input id="gymCustomSets" name="gymCustomSets" type="number" min="1" max="30"></div>
