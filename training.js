@@ -1163,7 +1163,7 @@ function azmGymCustomPick(select){
   f.gymCustomDevice.value=match?.[1]||'';
   f.gymCustomDeviceChoice.value=f.gymCustomDevice.value;
  }else if(select===f.gymCustomDeviceChoice&&select.value)f.gymCustomDevice.value=select.value;
- azmGymPreviewVideo(form);
+ azmGymPreviewVideo(f);
 }
 function azmGymChangeDraft(button,action,index){
  const form=button.closest('form'),draft=azmGymDraft(),f=form.elements;
