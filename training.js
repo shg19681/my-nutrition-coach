@@ -1111,7 +1111,20 @@ function azmGymPlanner(){
  <div class="full"><button class="button secondary" type="button" onclick="azmGymChangeDraft(this,'library')">أضف التمرين المختار للجدول</button></div>
  <label class="field">المستوى<select name="gymLevel"><option value="beginner" ${azmGymSelection.level==='beginner'?'selected':''}>مبتدئ</option><option value="regular" ${azmGymSelection.level==='regular'?'selected':''}>متمرّن بانتظام</option></select></label>
  <label class="field">جهاز الكارديو<select name="gymCardio">${azmGymCatalog['لياقة'].map(([name],i)=>`<option value="${i}" ${i===azmGymSelection.cardio?'selected':''}>${safe(name)}</option>`).join('')}</select></label>
- <details class="full azm-gym-browser"><summary><strong>تصفّح كل التمارين والأجهزة</strong></summary>
+ <details class="full azm-gym-browser"><summary><strong>تصفّح كل التمارين والأجهزة</strong></summary><style>
+.azm-gym-browser .azm-food-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-block:10px}
+.azm-gym-browser .azm-food-tile{min-width:0;border:1px solid #d6e4d9;border-radius:16px;background:#f9fbf7;overflow:hidden}
+.azm-gym-browser .azm-food-tile[open]{background:white}
+.azm-gym-browser .azm-food-tile summary{list-style:none;cursor:pointer;padding:14px;display:flex;gap:10px;align-items:center;min-height:62px}
+.azm-gym-browser .azm-food-tile summary::-webkit-details-marker{display:none}
+.azm-gym-browser .azm-food-tile summary::after{content:'+';margin-inline-start:auto;font-weight:bold;color:#365e48}
+.azm-gym-browser .azm-food-tile[open] summary::after{content:'−'}
+.azm-gym-browser .azm-food-tile .azm-food-icon{display:grid;place-items:center;width:38px;height:38px;border-radius:12px;background:#e8f2dc;flex:0 0 38px}
+.azm-gym-browser .azm-food-tile small{display:block;color:#466052;font-size:.8rem}
+.azm-gym-browser .azm-food-tile-body{padding:0 14px 14px}
+@media(max-width:850px){.azm-gym-browser .azm-food-card-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:390px){.azm-gym-browser .azm-food-card-grid{grid-template-columns:1fr}}
+</style>
  <div class="azm-food-card-grid" style="margin-top:12px">${groups.map((group,i)=>`<details class="azm-food-tile"><summary><span class="azm-food-icon" aria-hidden="true">${['🏋️','🔙','🦵','💪','💪','💪','🎯','⚡','🚴'][i]}</span><span><b>${safe(group)}</b><small>${fmt(azmGymCatalog[group].length)} تمرين</small></span></summary><div class="azm-food-tile-body"><ul>${azmGymCatalog[group].map(row=>`<li><strong>${safe(row[0])}</strong> · ${safe(row[2])}<br>${azmGymVideo(row)}</li>`).join('')}</ul></div></details>`).join('')}</div></details>
  <div class="full" data-gym-plan>${azmGymPlanHtml(azmGymSelection)}</div>
  <section class="full" aria-labelledby="gymCustomTitle">
