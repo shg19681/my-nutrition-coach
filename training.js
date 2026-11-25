@@ -1048,15 +1048,21 @@ function azmGymChangeDraft(button,action,index){
  }else{
   const name=form.elements.gymCustomName.value.trim(),device=form.elements.gymCustomDevice.value.trim();
   if(!name){form.elements.gymCustomName.focus();return;}
+  const fields=['gymCustomWeight','gymCustomSets','gymCustomReps'].map(key=>form.elements[key]);
+  const invalid=fields.find(input=>!input.validity.valid);
+  if(invalid){invalid.reportValidity();return;}
+  const [weight,sets,reps]=fields.map(input=>input.value===''?null:Number(input.value));
   const targets=[...form.querySelectorAll('[name="gymCustomTargets"]:checked')].map(input=>input.value);
   if(!targets.length){form.querySelector('[name="gymCustomTargets"]').focus();form.querySelector('[data-custom-help]').textContent='اختَر عضلة مستهدفة على الأقل.';return;}
   if(!draft.some(item=>item.row[0]===name&&item.row[2]===device)){
    const row=[name,name,device||'تمرين يدوي'];
    row.targets=targets;
-   draft.push({group:azmGymSelection.group,row});
+   row.prescription={weight,sets,reps};
+   draft.push({group:form.elements.gymCustomGroup.value,row});
   }
   form.elements.gymCustomName.value='';
   form.elements.gymCustomDevice.value='';
+  fields.forEach(input=>input.value='');
   form.querySelector('[data-custom-help]').textContent='';
   form.querySelectorAll('[name="gymCustomTargets"]').forEach(input=>input.checked=false);
  }
@@ -1103,15 +1109,23 @@ function azmGymPlanner(){
  <label class="field">الجهاز أو الأداة<select name="gymEquipment">${azmGymEquipmentOptions(azmGymSelection)}</select></label>
  <label class="field">التمرين الأساسي<select name="gymExercise">${azmGymExerciseOptions(azmGymSelection)}</select></label>
  <div class="full"><button class="button secondary" type="button" onclick="azmGymChangeDraft(this,'library')">أضف التمرين المختار للجدول</button></div>
- <details class="full"><summary>أضف تمرين من عندك</summary>
- <label class="field">اسم التمرين<input name="gymCustomName" maxlength="100"></label>
- <label class="field">الجهاز أو الأداة<input name="gymCustomDevice" maxlength="100"></label>
- <fieldset class="musclePicker"><legend>العضلات اللي يستهدفها التمرين</legend>${Object.entries(azmGymMuscles).map(([id,[label]])=>`<label class="checkline"><input type="checkbox" name="gymCustomTargets" value="${id}">${safe(label)}</label>`).join('')}</fieldset>
- <p data-custom-help aria-live="polite"></p><button class="button secondary" type="button" onclick="azmGymChangeDraft(this,'custom')">أضف للجدول</button></details>
  <label class="field">المستوى<select name="gymLevel"><option value="beginner" ${azmGymSelection.level==='beginner'?'selected':''}>مبتدئ</option><option value="regular" ${azmGymSelection.level==='regular'?'selected':''}>متمرّن بانتظام</option></select></label>
  <label class="field">جهاز الكارديو<select name="gymCardio">${azmGymCatalog['لياقة'].map(([name],i)=>`<option value="${i}" ${i===azmGymSelection.cardio?'selected':''}>${safe(name)}</option>`).join('')}</select></label>
+ <details class="full azm-gym-browser"><summary><strong>تصفّح كل التمارين والأجهزة</strong></summary>
+ <div class="azm-food-card-grid" style="margin-top:12px">${groups.map((group,i)=>`<details class="azm-food-tile"><summary><span class="azm-food-icon" aria-hidden="true">${['🏋️','🔙','🦵','💪','💪','💪','🎯','⚡','🚴'][i]}</span><span><b>${safe(group)}</b><small>${fmt(azmGymCatalog[group].length)} تمرين</small></span></summary><div class="azm-food-tile-body"><ul>${azmGymCatalog[group].map(row=>`<li><strong>${safe(row[0])}</strong> · ${safe(row[2])}<br>${azmGymVideo(row)}</li>`).join('')}</ul></div></details>`).join('')}</div></details>
  <div class="full" data-gym-plan>${azmGymPlanHtml(azmGymSelection)}</div>
- <div class="full"><details><summary>تصفّح كل التمارين والأجهزة</summary>${groups.map(group=>`<details><summary>${safe(group)} · ${azmGymCatalog[group].length}</summary><ul>${azmGymCatalog[group].map(row=>`<li><strong>${safe(row[0])}</strong> · ${safe(row[2])}<br>${azmGymVideo(row)}</li>`).join('')}</ul></details>`).join('')}</details></div>
+ <section class="full" aria-labelledby="gymCustomTitle">
+ <div class="sectionHead"><h2 id="gymCustomTitle">أضف تمرين من عندك</h2></div>
+ <div class="formGrid">
+ <div class="field full"><label for="gymCustomGroup">القسم الأساسي للتمرين</label><select id="gymCustomGroup" name="gymCustomGroup">${groups.map(g=>`<option ${g===azmGymSelection.group?'selected':''}>${safe(g)}</option>`).join('')}</select></div>
+ <div class="field"><label for="gymCustomName">اسم التمرين</label><input id="gymCustomName" name="gymCustomName" maxlength="100" placeholder="اكتب اسم التمرين"></div>
+ <div class="field"><label for="gymCustomDevice">اسم الجهاز أو المعدّة (اختياري)</label><input id="gymCustomDevice" name="gymCustomDevice" maxlength="100" placeholder="اكتب اسم الجهاز"></div>
+ <div class="field"><label for="gymCustomWeight">الوزن بالكجم (اختياري)</label><input id="gymCustomWeight" name="gymCustomWeight" type="number" min="0" max="1000" step="0.5"></div>
+ <div class="field"><label for="gymCustomSets">الجولات</label><input id="gymCustomSets" name="gymCustomSets" type="number" min="1" max="30"></div>
+ <div class="field"><label for="gymCustomReps">التكرارات لكل جولة</label><input id="gymCustomReps" name="gymCustomReps" type="number" min="1" max="200"></div>
+ <fieldset class="musclePicker full"><legend>العضلات اللي يستهدفها التمرين</legend>${Object.entries(azmGymMuscles).map(([id,[label]])=>`<label class="checkline"><input type="checkbox" name="gymCustomTargets" value="${id}">${safe(label)}</label>`).join('')}</fieldset>
+ <p class="full" data-custom-help aria-live="polite"></p><button class="button full" type="button" onclick="azmGymChangeDraft(this,'custom')">أضف للجدول</button>
+ </div></section>
  </form></details>`;
 }
 function azmGymEquipmentOptions(settings){
@@ -1140,7 +1154,7 @@ function azmGymPlanHtml(settings){
  const warmup=p.moves.some(item=>item.group==='أرجل')?'مشي خفيف أو دراجة، بعدها حركة كاحل وحوض بدون حمل.':first?'مشي خفيف، بعدها حرّك المفاصل المستخدمة بمدى مريح.':'ابدأ على جهاز الكارديو بوتيرة سهلة وزِدها تدريجيًا.';
  const primary=first?` بعدها سوِّ جولة أو جولتين خفيفات من أول تمرين لكل قسم اخترته.`:'';
  const gapNote=p.gaps.length?`<p class="hint">عضلات تحتاج اختيار إضافي: ${safe(p.gaps.map(id=>azmGymMuscles[id][0]).join('، '))}. أضف تمرين يستهدفها إذا تبي تضمّنها بالحصة.</p>`:'';
- const resistance=p.moves.length?`<h4>المقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والتكرار</th><th>الشرح</th></tr></thead><tbody>${p.moves.map(({row,group,extra})=>`<tr><td>${safe(row[0])}<br><small>${safe(row[2])}${extra?' · اقتراح لتغطية العضلات':''}</small></td><td>${azmGymTargetHtml(row,group)}</td><td>${p.beginner?2:3} × ${/بلانك|توازن/.test(row[0])?'١٥–٣٠ ثانية':/حمل|مشي المزارع|زلاجة/.test(row[0])?'٢٠–٣٠ ثانية':'٨–١٢'}</td><td>${azmGymVideo(row)}</td></tr>`).join('')}</tbody></table></div>${gapNote}<p class="hint">ابدأ بحمل تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p>`:'';
+ const resistance=p.moves.length?`<h4>المقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والتكرار</th><th>الشرح</th></tr></thead><tbody>${p.moves.map(({row,group,extra})=>`<tr><td>${safe(row[0])}<br><small>${safe(row[2])}${extra?' · اقتراح لتغطية العضلات':''}</small></td><td>${azmGymTargetHtml(row,group)}</td><td>${row.prescription?.sets??(p.beginner?2:3)} × ${row.prescription?.reps??(/بلانك|توازن/.test(row[0])?'١٥–٣٠ ثانية':/حمل|مشي المزارع|زلاجة/.test(row[0])?'٢٠–٣٠ ثانية':'٨–١٢')}${row.prescription?.weight!=null?`<br><small>${fmt(row.prescription.weight)} كجم</small>`:''}</td><td>${azmGymVideo(row)}</td></tr>`).join('')}</tbody></table></div>${gapNote}<p class="hint">ابدأ بحمل تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p>`:'';
  const time=p.moves.some(item=>item.group==='أرجل')?(p.beginner?'٨–١٢':'١٠–١٥'):(p.beginner?'١٠–١٥':'١٥–٢٥');
  return `<div class="card" style="margin-top:12px;padding:14px">${chosen}<h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${primary}</p>${resistance}
  <h4>الكارديو${p.moves.length?' بعد المقاومة':''}</h4><p>${time} دقيقة بالمجموع. اختَر جهاز واحد أو وزّع الوقت بينهم. خلك على وتيرة تقدر تتكلم معها، واختتم بحركة خفيفة ٥ دقايق.</p>
