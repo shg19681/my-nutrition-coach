@@ -745,7 +745,7 @@ function trainingSummary(s){
 }
 function trainingPage(){
  const date=trainingDate||dateNow(),s=sessionFor(date),a=trainingSummary(s);
- if(s.completed&&trainingExpandedDate!==date)return `${azmGymPlanner()}${completedSessionBar(s,date)}${trainingHistory(date)}`;
+ if(s.completed&&trainingExpandedDate!==date)return `${s.gymPlan?'':azmGymPlanner()}${completedSessionBar(s,date)}${trainingHistory(date)}`;
  return `${azmGymPlanner()}<div class="card"><h3>تمرين اليوم</h3><div class="field"><label for="trainingDate">التاريخ</label><input id="trainingDate" type="date" value="${safe(date)}" onchange="trainingDate=this.value;render()"></div><div class="flex" style="margin:16px 0"><button class="button ${s.status==='trained'?'':'secondary'}" onclick="setTrainingStatus('trained')">تمرنت</button><button class="button ${s.status==='rest'?'':'secondary'}" onclick="setTrainingStatus('rest')">راحة</button><span class="hint">${s.status==='unlogged'?'لم تسجّل حالة هذا اليوم':s.status==='rest'?'يوم راحة':'يوم تمرين'}</span></div>${s.status==='trained'?`
  <form class="formGrid" onsubmit="saveTrainingDetails(event)"><fieldset class="full musclePicker"><legend>اختر كل الأقسام التي تمرنتها</legend>${muscleGroups.map(g=>`<label class="checkline"><input type="checkbox" name="group" value="${g}" ${s.groups.includes(g)?'checked':''}>${g}</label>`).join('')}</fieldset><div class="field"><label for="resistanceMinutes">مدة المقاومة بالدقائق، تشمل الراحة بين الجولات</label><input id="resistanceMinutes" name="minutes" type="number" min="0" max="300" value="${s.minutes||0}" required></div><fieldset class="full musclePicker"><legend>${tr('الكارديو')}</legend>${cardioEditor(s)}${cardioPhotoPicker(date,s)}<p class="hint full">${tr('تقدر تسجّل كارديو فقط وتخلي مدة المقاومة صفر. مدة الكارديو منفصلة عن المقاومة.')}</p></fieldset><label class="checkline full"><input type="checkbox" name="pain" ${s.pain?'checked':''}>يوجد ألم أثناء التمرين، خصوصاً الكتف</label><button id="trainingDetailsSave" class="button full" ${cardioPhotoJobs.has(date)?'disabled':''}>حفظ تفاصيل الجلسة</button></form>
  <div class="sectionHead"><h2>أضف تمريناً أو مجموعة جولات</h2></div><form id="exerciseForm" class="formGrid" onsubmit="addExercise(event)"><div class="field full"><label for="exerciseGroup">القسم الأساسي للتمرين</label><select name="group" id="exerciseGroup" onchange="refreshExerciseChoices(this.form)">${muscleGroups.map(g=>`<option>${safe(g)}</option>`).join('')}</select></div><div class="field"><label for="exerciseName">اسم التمرين</label><select id="exerciseNameOptions" aria-label="اختيارات اسم التمرين" onchange="if(this.value){this.form.elements.name.value=this.value;this.form.elements.device.value='';refreshExerciseChoices(this.form,true)}"><option value="">اختر من القائمة</option>${exerciseChoiceOptions(muscleGroups[0],0)}</select><input id="exerciseName" name="name" maxlength="100" required placeholder="أو اكتب اسم التمرين"></div><div class="field"><label for="exerciseDevice">اسم الجهاز أو المعدّة (اختياري)</label><select id="exerciseDeviceOptions" aria-label="اختيارات الجهاز" onchange="if(this.value)this.form.elements.device.value=this.value"><option value="">اختر من القائمة</option>${exerciseChoiceOptions(muscleGroups[0],1)}</select><input id="exerciseDevice" name="device" maxlength="100" placeholder="أو اكتب اسم الجهاز"></div><div class="field"><label for="exerciseWeight">الوزن الكلي المستخدم (كجم)، صفر لوزن الجسم</label><input id="exerciseWeight" name="weight" type="number" min="0" max="1000" step="0.5" required></div><div class="field"><label for="exerciseSets">الجولات بنفس الوزن والتكرارات</label><input id="exerciseSets" name="sets" type="number" min="1" max="30" value="3" required></div><div class="field"><label for="exerciseReps">التكرارات لكل جولة</label><input id="exerciseReps" name="reps" type="number" min="1" max="200" value="10" required></div><div class="field full"><label for="exercisePhoto">صورة الجهاز (اختيارية)</label><input id="exercisePhoto" type="file" accept="image/jpeg,image/png,image/webp" onchange="prepareTrainingPhoto(this)"><div id="photoStatus" class="hint"></div><img id="photoPreview" class="exercisePhoto" alt="معاينة صورة الجهاز" hidden></div><p class="hint full">إذا تغيّر الوزن أو التكرارات بين الجولات، أضف مجموعة جديدة بنفس اسم التمرين. الصورة تُحفظ مع السجل؛ ارجع لمحادثتك مع ChatGPT واطلب مراجعة التطبيق والصور بعد الحفظ.</p><button id="exerciseSave" class="button full">إضافة التمرين</button></form>
@@ -753,7 +753,7 @@ function trainingPage(){
  ${trainingHistory()}`;
 }
 function completedSessionTitle(s){const count=s.exercises?.length||0;if(count)return s.exercises[0].name+(count>1?' + '+fmt(count-1)+' تمارين':'');return s.cardio>0?'كارديو '+(s.cardioType||''):'جلسة تدريب';}
-function completedSessionBar(s,date){const groups=s.groups?.length?' · '+safe(s.groups.join('، ')):'';return `<div class="card completed-session-bar"><div class="completed-session-copy"><strong>${safe(completedSessionTitle(s))}</strong><small>${safe(date)}${groups}</small></div><button class="button" onclick="openTrainingSession('${date}')">فتح وتعديل</button></div>`;}
+function completedSessionBar(s,date){const groups=s.groups?.length?' · '+safe(s.groups.join('، ')):'';const duration=s.gymPlan?.duration?` · ${fmt(s.gymPlan.duration)} دقيقة`:'';return `<div class="card completed-session-bar"><div class="completed-session-copy"><strong>${safe(completedSessionTitle(s))}</strong><small>${safe(date)}${groups}${duration}</small></div><button class="button" onclick="openTrainingSession('${date}')">فتح وتعديل</button></div>`;}
 function trainingHistory(excludeDate=''){const rows=Object.entries(state.training||{}).filter(([d])=>d!==excludeDate).sort(([a],[b])=>b.localeCompare(a));return `<div class="card" style="margin-top:16px"><h3>سجل التمرين والراحة</h3>${rows.map(([d,x])=>`<div class="meal"><span>${safe(d)} • ${x.status==='rest'?'راحة':'تمرين'} • ${safe(x.groups.join('، '))}</span><button class="button ghost" onclick="trainingDate='${safe(d)}';go('training')">عرض</button></div>`).join('')||'<div class="empty">ما سجلت أيام للحين</div>'}</div>`;}
 function openTrainingSession(date){trainingDate=date;trainingExpandedDate=date;render();window.scrollTo(0,0);}
 function collapseCompletedTraining(){trainingExpandedDate=null;render();}
@@ -778,7 +778,7 @@ async function persistTraining(){
 }
 async function setTrainingStatus(status){
  const date=trainingDate||dateNow(),old=sessionFor(date);
- if(status==='rest' && (old.exercises.length || old.cardio>0 || cardioActivitiesFor(old).length || old.minutes>0 || old.cardioPhoto) && !confirm('تحويل اليوم إلى راحة يحذف تمارين وكارديو هذا اليوم. تبي تكمل؟'))return;
+ if(status==='rest' && (old.gymPlan || old.exercises.length || old.cardio>0 || cardioActivitiesFor(old).length || old.minutes>0 || old.cardioPhoto) && !confirm('تحويل اليوم إلى راحة يحذف تمارين وكارديو هذا اليوم. تبي تكمل؟'))return;
  if(status==='rest'){cardioPhotoJobs.delete(date);cardioPhotoDrafts.delete(date);}
  state.training||={};state.training[date]=status==='rest'?{status,groups:[],exercises:[],minutes:0,cardio:0,cardioActivities:[],pain:false}:{...old,status};
  await persistTraining();render();
@@ -1077,7 +1077,8 @@ function azmGymDraft(date=trainingDate||dateNow()){
  if(!azmGymDayDrafts.has(key)){
   let saved=null;
   try{saved=JSON.parse(localStorage.getItem(key));}catch{}
-  const draft=saved||{types:[],moves:[],extra:[],checks:{}};
+  const completedPlan=sessionFor(date).gymPlan;
+  const draft=saved||(completedPlan?structuredClone(completedPlan):{types:[],moves:[],extra:[],checks:{}});
   const previousChoice=azmGymCardioRow(draft.cardio)??azmGymCatalog['لياقة'][draft.cardio];
   if(previousChoice&&!draft.extra.some(item=>item.activity===previousChoice[1]||item.name===previousChoice[0])){
    draft.extra.unshift({name:previousChoice[0],activity:previousChoice[1]});
@@ -1091,22 +1092,53 @@ function azmGymDraft(date=trainingDate||dateNow()){
  }
  return azmGymDayDrafts.get(key);
 }
-function azmGymSaveDraft(draft){
- try{localStorage.setItem(azmGymDraftKey(),JSON.stringify(draft));return true;}catch{return false;}
+function azmGymSaveDraft(draft,date=trainingDate||dateNow()){
+ try{localStorage.setItem(azmGymDraftKey(date),JSON.stringify(draft));return true;}catch{return false;}
 }
 function azmGymUpdateCheck(input){
  const tr=input.closest('tr'),draft=azmGymDraft();
- const [weight,reps]=[...tr.querySelectorAll('input[type="number"]')];
- const invalid=[weight,reps].find(field=>!field.validity.valid);
+ const fields=[...tr.querySelectorAll('[data-gym-check]')];
+ const invalid=fields.find(field=>!field.validity.valid);
  if(invalid){
   if(input.type==='checkbox')input.checked=!input.checked;
   invalid.reportValidity();
   return;
  }
  const done=tr.querySelector('input[type="checkbox"]').checked;
- draft.checks[tr.dataset.gymMove]={done,weight:weight.value,reps:reps.value};
+ draft.checks[tr.dataset.gymMove]={done,...Object.fromEntries(fields.map(field=>[field.dataset.gymCheck,field.value]))};
  tr.style.backgroundColor=done?'#eef7e7':'';
  tr.closest('[data-gym-plan]').querySelector('[data-gym-save-status]').textContent=azmGymSaveDraft(draft)?'':'تعذر حفظ التعديل على هالمتصفح.';
+}
+function azmGymUpdateDuration(input){
+ if(!input.validity.valid&&input.value)return;
+ const draft=azmGymDraft();
+ draft.duration=input.value?Number(input.value):'';
+ const status=input.form.querySelector('[data-gym-finish-status]');
+ status.textContent=azmGymSaveDraft(draft)?'':'تعذر حفظ المسودة على هالمتصفح.';
+}
+async function azmGymFinish(button){
+ if(button.disabled)return;
+ const form=button.form,date=trainingDate||dateNow(),draft=azmGymDraft(date);
+ const duration=form.elements.gymDuration;
+ const invalid=[duration,...form.querySelectorAll('[data-gym-check], [data-cardio-field]')].find(field=>!field.validity.valid);
+ if(invalid){invalid.reportValidity();return;}
+ const profile=azmGymProfile(),old=sessionFor(date);
+ const firstWeek=draft.firstWeek??azmGymIntroProgress(profile,date).remaining>0;
+ const gymPlan=JSON.parse(JSON.stringify({...draft,firstWeek,duration:Number(duration.value)}));
+ button.disabled=true;
+ trainingExpandedDate=date;
+ state.training||={};
+ state.training[date]={...old,status:'trained',completed:true,gymPlan};
+ try{
+  if(await persistTraining()){
+   draft.firstWeek=firstWeek;
+   draft.duration=gymPlan.duration;
+   azmGymSaveDraft(draft,date);
+   if((trainingDate||dateNow())===date){trainingExpandedDate=null;render();}
+  }else{
+   form.querySelector('[data-gym-finish-status]').textContent='تعذرت مزامنة التمرين. جرّب الحفظ مرة ثانية.';
+  }
+ }finally{button.disabled=false;}
 }
 function azmGymProfile(){
  try{return JSON.parse(localStorage.getItem('azm-gym-experience:'+accountId))||{};}catch{return {};}
@@ -1275,7 +1307,7 @@ function azmGymChangeDraft(button,action,index){
 }
 function azmGymRefreshPlan(form){
  const draft=azmGymDraft(),profile=azmGymProfile();
- form.querySelector('[data-gym-plan]').innerHTML=azmGymPlanHtml(draft,azmGymIntroProgress(profile,trainingDate||dateNow()).remaining>0,profile.mode==='new');
+ form.querySelector('[data-gym-plan]').innerHTML=azmGymPlanHtml(draft,draft.firstWeek??(azmGymIntroProgress(profile,trainingDate||dateNow()).remaining>0),profile.mode==='new');
 }
 function azmGymSelectType(button){
  const draft=azmGymDraft(),type=button.dataset.type;
@@ -1335,7 +1367,7 @@ function azmGymCardioEntry(item,index,guidance=''){
 
 function azmGymPlanner(){
  const date=trainingDate||dateNow(),profile=azmGymProfile(),draft=azmGymDraft(date);
- const intro=azmGymIntroProgress(profile,date),firstWeek=intro.remaining>0;
+ const intro=azmGymIntroProgress(profile,date),firstWeek=draft.firstWeek??(intro.remaining>0);
  const isRest=sessionFor(date).status==='rest';
  const canPlan=Boolean(profile.mode);
  const showPlan=canPlan&&!isRest;
@@ -1380,6 +1412,13 @@ function azmGymPlanner(){
  <label class="field">المدة بالدقايق (اختياري)<input name="gymExtraMinutes" type="number" min="1" max="240" step="1"></label>
  <button class="button full" type="button" onclick="azmGymChangeDraft(this,'addCardio')">أضف الكارديو للجدول</button>
  </div></section>
+ <section class="full card" aria-labelledby="gymFinishTitle">
+ <h3 id="gymFinishTitle">حفظ حصة النادي</h3>
+ <label class="field" for="gymDuration">مدة التمرين بالدقائق</label>
+ <input id="gymDuration" name="gymDuration" type="number" min="1" max="1440" step="1" inputmode="numeric" required value="${safe(String(draft.duration??sessionFor(date).gymPlan?.duration??''))}" oninput="azmGymUpdateDuration(this)">
+ <button type="button" class="button full" onclick="azmGymFinish(this)">${sessionFor(date).gymPlan?'حفظ التعديلات':'حفظ التمرين وإنهاء الحصة'}</button>
+ <p class="hint" data-gym-finish-status aria-live="polite"></p>
+ </section>
 `:''}
  <details class="full azm-gym-browser"><summary><strong>تصفّح كل التمارين والأجهزة</strong></summary><style>
 .azm-gym-browser .azm-food-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-block:10px}
@@ -1414,6 +1453,7 @@ function azmGymPlanHtml(draft,firstWeek,introLevel){
   const checked=draft.checks[key]||{};
   const weight=checked.weight??row.prescription?.weight??'';
   const actualReps=checked.reps??row.prescription?.reps??'';
+  const actualSets=checked.sets??row.prescription?.sets??'';
   const repsLabel=timed?'المدة بالثواني':'التكرارات';
   const remove=custom?`<button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeMove',${draft.moves.findIndex(item=>item.row===row)})" aria-label="احذف ${safe(row[0])} من الجدول">حذف</button>`:'';
   return `<tr data-gym-move="${safe(key)}" style="${checked.done?'background-color:#eef7e7':''}">
@@ -1421,8 +1461,9 @@ function azmGymPlanHtml(draft,firstWeek,introLevel){
    <td>${azmGymTargetHtml(row,group)}</td>
    <td><div style="padding:8px 10px;margin-block-end:12px;border-radius:8px;background:#eef7e7;color:#27432e">
     <strong>المقترح</strong><br><span>${fmt(sets)} جولات · ${safe(typeof reps==='number'?fmt(reps):reps)}${timed?(typeof reps==='number'?' ثانية':''):' تكرار لكل جولة'}</span></div>
-   <label class="field">الوزن (كجم)<input type="number" inputmode="decimal" min="0" max="1000" step="0.01" value="${safe(String(weight))}" aria-label="الوزن (كجم) — ${safe(row[0])}" onchange="azmGymUpdateCheck(this)" style="min-width:5rem"></label>
-   <label class="field">${repsLabel}<input type="number" inputmode="numeric" min="1" max="${timed?600:200}" step="1" value="${safe(String(actualReps))}" aria-label="${repsLabel} — ${safe(row[0])}" onchange="azmGymUpdateCheck(this)" style="min-width:5rem"></label></td><td>${azmGymVideo(row)}</td></tr>`;
+   <label class="field">الجولات الفعلية<input type="number" data-gym-check="sets" inputmode="numeric" min="1" max="30" step="1" value="${safe(String(actualSets))}" aria-label="الجولات الفعلية — ${safe(row[0])}" oninput="azmGymUpdateCheck(this)" style="min-width:5rem"></label>
+   <label class="field">الوزن (كجم)<input type="number" data-gym-check="weight" inputmode="decimal" min="0" max="1000" step="0.01" value="${safe(String(weight))}" aria-label="الوزن (كجم) — ${safe(row[0])}" oninput="azmGymUpdateCheck(this)" style="min-width:5rem"></label>
+   <label class="field">${repsLabel}<input type="number" data-gym-check="reps" inputmode="numeric" min="1" max="${timed?600:200}" step="1" value="${safe(String(actualReps))}" aria-label="${repsLabel} — ${safe(row[0])}" oninput="azmGymUpdateCheck(this)" style="min-width:5rem"></label></td><td>${azmGymVideo(row)}</td></tr>`;
  }).join('');
  return `<div class="card" style="margin-top:12px;padding:14px"><h3>جدول تمرين اليوم</h3>
  <h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${p.moves.length?' سوّ جولة خفيفة من أول تمرين قبل وزن التمرين.':''}</p>
