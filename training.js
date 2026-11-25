@@ -1043,10 +1043,39 @@ const azmGymRoutineRows={
  'الترابيس':['Dumbbell shrug','Cable face pull']
 };
 const azmGymRowsByName=new Map(Object.entries(azmGymCatalog).flatMap(([group,rows])=>rows.map(row=>[row[1],{group,row}])));
+function azmGymDraftKey(date=trainingDate||dateNow()){
+ return 'azm-gym-draft:'+JSON.stringify([accountId,date]);
+}
 function azmGymDraft(date=trainingDate||dateNow()){
- const key=JSON.stringify([accountId,date]);
- if(!azmGymDayDrafts.has(key))azmGymDayDrafts.set(key,{types:[],moves:[],cardio:null,extra:[]});
+ const key=azmGymDraftKey(date);
+ if(!azmGymDayDrafts.has(key)){
+  let saved=null;
+  try{saved=JSON.parse(localStorage.getItem(key));}catch{}
+  const draft=saved||{types:[],moves:[],cardio:null,extra:[],checks:{}};
+  draft.moves.forEach(move=>{
+   if(move.prescription)move.row.prescription=move.prescription;
+   if(!move.group)move.row.targets=[];
+  });
+  azmGymDayDrafts.set(key,draft);
+ }
  return azmGymDayDrafts.get(key);
+}
+function azmGymSaveDraft(draft){
+ try{localStorage.setItem(azmGymDraftKey(),JSON.stringify(draft));return true;}catch{return false;}
+}
+function azmGymUpdateCheck(input){
+ const tr=input.closest('tr'),draft=azmGymDraft();
+ const [weight,reps]=[...tr.querySelectorAll('input[type="number"]')];
+ const invalid=[weight,reps].find(field=>!field.validity.valid);
+ if(invalid){
+  if(input.type==='checkbox')input.checked=!input.checked;
+  invalid.reportValidity();
+  return;
+ }
+ const done=tr.querySelector('input[type="checkbox"]').checked;
+ draft.checks[tr.dataset.gymMove]={done,weight:weight.value,reps:reps.value};
+ tr.style.backgroundColor=done?'#eef7e7':'';
+ tr.closest('[data-gym-plan]').querySelector('[data-gym-save-status]').textContent=azmGymSaveDraft(draft)?'':'تعذر حفظ التعديل على هالمتصفح.';
 }
 function azmGymProfile(){
  try{return JSON.parse(localStorage.getItem('azm-gym-experience:'+accountId))||{};}catch{return {};}
@@ -1090,7 +1119,10 @@ function azmGymPlan(draft,firstWeek,introLevel){
 }
 function azmGymChangeDraft(button,action,index){
  const form=button.closest('form'),draft=azmGymDraft(),f=form.elements;
- if(action==='removeMove')draft.moves.splice(index,1);
+ if(action==='removeMove'){
+  const [removed]=draft.moves.splice(index,1);
+  if(removed)delete draft.checks['custom:'+removed.id];
+ }
  else if(action==='removeCardio')draft.extra.splice(index,1);
  else if(action==='addCardio'){
   const field=f.gymExtraType.value==='other'?f.gymExtraName:f.gymExtraType;
@@ -1111,11 +1143,12 @@ function azmGymChangeDraft(button,action,index){
   const row=[name,match?.row[1]||name,device||match?.row[2]||'تمرين يدوي'];
   row.prescription={weight,sets,reps};
   if(!match)row.targets=[];
-  draft.moves.push({group:match?.group,row,custom:true});
+  draft.moves.push({id:crypto.randomUUID(),group:match?.group,row,custom:true,prescription:row.prescription});
   f.gymCustomName.value='';
   f.gymCustomDevice.value='';
   fields.forEach(input=>input.value='');
  }
+ azmGymSaveDraft(draft);
  azmGymRefreshPlan(form);
 }
 function azmGymRefreshPlan(form){
@@ -1128,10 +1161,13 @@ function azmGymSelectType(button){
  else draft.types.push(type);
  button.setAttribute('aria-pressed',String(draft.types.includes(type)));
  button.classList.toggle('secondary',!draft.types.includes(type));
+ azmGymSaveDraft(draft);
  azmGymRefreshPlan(button.closest('form'));
 }
 function azmGymSelectCardio(select){
- azmGymDraft().cardio=select.value===''?null:Number(select.value);
+ const draft=azmGymDraft();
+ draft.cardio=select.value===''?null:Number(select.value);
+ azmGymSaveDraft(draft);
  const form=select.closest('form');
  azmGymRefreshPlan(form);
  form.elements.gymCardio.focus();
@@ -1203,16 +1239,25 @@ function azmGymPlanHtml(draft,firstWeek,introLevel){
  const p=azmGymPlan(draft,firstWeek,introLevel);
  if(!p.active&&!p.moves.length&&!draft.extra.length)return '<p class="hint">اختَر نوع تمرين اليوم عشان يطلع لك الجدول.</p>';
  const warmup=p.legs?'ابدأ بمشي خفيف أو دراجة، بعدها حرّك الكاحل والورك بمدى مريح.':p.moves.length?'ابدأ بمشي خفيف، بعدها حرّك المفاصل اللي تستخدمها اليوم بمدى مريح.':'ابدأ على جهاز الكارديو بوتيرة سهلة وزِدها تدريجيًا.';
- const rows=p.moves.map(({row,group,custom})=>{
+ const rows=p.moves.map(({row,group,custom,id})=>{
   const timed=/بلانك|توازن|حمل|مشي المزارع/.test(row[0]);
   const sets=row.prescription?.sets??(p.easy?2:3),reps=row.prescription?.reps??(timed?'١٥–٣٠ ثانية':'٨–١٢');
-  const weight=row.prescription?.weight;
+  const key=custom?'custom:'+id:'library:'+row[1];
+  const checked=draft.checks[key]||{};
+  const weight=checked.weight??row.prescription?.weight??'';
+  const actualReps=checked.reps??row.prescription?.reps??'';
+  const repsLabel=timed?'المدة بالثواني':'التكرارات';
   const remove=custom?`<button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeMove',${draft.moves.findIndex(item=>item.row===row)})" aria-label="احذف ${safe(row[0])} من الجدول">حذف</button>`:'';
-  return `<tr><td><strong>${safe(row[0])}</strong><br><small>${safe(row[2])}</small>${remove}</td><td>${azmGymTargetHtml(row,group)}</td><td>${fmt(sets)} × ${safe(String(reps))}${weight!=null?`<br><small>${fmt(weight)} كجم</small>`:''}</td><td>${azmGymVideo(row)}</td></tr>`;
+  return `<tr data-gym-move="${safe(key)}" style="${checked.done?'background-color:#eef7e7':''}">
+   <td><label class="checkline"><input type="checkbox" aria-label="تم ${safe(row[0])}" ${checked.done?'checked':''} onchange="azmGymUpdateCheck(this)">تم</label><strong>${safe(row[0])}</strong><br><small>${safe(row[2])}</small>${remove}</td>
+   <td>${azmGymTargetHtml(row,group)}</td>
+   <td><small>${fmt(sets)} × ${safe(String(reps))} مقترح</small>
+   <label class="field">الوزن (كجم)<input type="number" inputmode="decimal" min="0" max="1000" step="0.01" value="${safe(String(weight))}" aria-label="الوزن (كجم) — ${safe(row[0])}" onchange="azmGymUpdateCheck(this)" style="min-width:5rem"></label>
+   <label class="field">${repsLabel}<input type="number" inputmode="numeric" min="1" max="${timed?600:200}" step="1" value="${safe(String(actualReps))}" aria-label="${repsLabel} — ${safe(row[0])}" onchange="azmGymUpdateCheck(this)" style="min-width:5rem"></label></td><td>${azmGymVideo(row)}</td></tr>`;
  }).join('');
  return `<div class="card" style="margin-top:12px;padding:14px"><h3>جدول تمرين اليوم</h3>
  <h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${p.moves.length?' سوّ جولة خفيفة من أول تمرين قبل وزن التمرين.':''}</p>
- ${rows?`<h4>الحديد والمقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والتكرار</th><th>الشرح</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">اختَر وزن تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p>`:''}
+ ${rows?`<h4>الحديد والمقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والوزن والتكرارات</th><th>الشرح</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">اختَر وزن تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p><p class="hint" data-gym-save-status aria-live="polite"></p>`:''}
  <h4>الكارديو${rows?' بعد المقاومة':''}</h4>
  <p><strong>${safe(p.cardio[0])}</strong> · ${p.time} دقيقة بوتيرة تقدر تتكلم معها. اختم بخمس دقايق بوتيرة أخف.</p>
  <label class="field">غيّر الكارديو<select name="gymCardio" onchange="azmGymSelectCardio(this)"><option value="">الاقتراح التلقائي</option>${azmGymCatalog['لياقة'].map((row,i)=>`<option value="${i}" ${draft.cardio===i?'selected':''}>${safe(row[0])}</option>`).join('')}</select></label>
