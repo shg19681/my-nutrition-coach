@@ -1117,6 +1117,23 @@ function azmGymPlan(draft,firstWeek,introLevel){
  const time=easy?'٨–١٢':legs?'١٠–١٥':moves.length?'١٢–٢٠':'١٥–٢٥';
  return {moves,cardio,time,legs,easy,active:firstWeek||routines.length>0};
 }
+function azmGymCustomPick(select){
+ const f=select.form,group=f.gymCustomGroup.value;
+ if(select===f.gymCustomGroup){
+  if(f.gymCustomName.value===f.gymCustomNameChoice.value)f.gymCustomName.value='';
+  if(f.gymCustomDevice.value===f.gymCustomDeviceChoice.value)f.gymCustomDevice.value='';
+  f.gymCustomNameChoice.innerHTML='<option value="">اختر تمريناً</option>'+exerciseChoiceOptions(group,0);
+  f.gymCustomDeviceChoice.innerHTML='<option value="">اختر جهازاً أو أداة</option>'+exerciseChoiceOptions(group,1);
+  const section=select.closest('section');
+  section.querySelectorAll('[data-gym-resistance-inputs]').forEach(el=>el.hidden=group==='لياقة');
+  section.querySelector('[data-gym-cardio-inputs]').hidden=group!=='لياقة';
+ }else if(select===f.gymCustomNameChoice&&select.value){
+  f.gymCustomName.value=select.value;
+  const match=(exerciseOptionsByGroup[group]||[]).find(([name])=>name===select.value);
+  f.gymCustomDevice.value=match?.[1]||'';
+  f.gymCustomDeviceChoice.value=f.gymCustomDevice.value;
+ }else if(select===f.gymCustomDeviceChoice&&select.value)f.gymCustomDevice.value=select.value;
+}
 function azmGymChangeDraft(button,action,index){
  const form=button.closest('form'),draft=azmGymDraft(),f=form.elements;
  if(action==='removeMove'){
@@ -1135,18 +1152,28 @@ function azmGymChangeDraft(button,action,index){
  }else{
   const name=f.gymCustomName.value.trim(),device=f.gymCustomDevice.value.trim();
   if(!name){f.gymCustomName.focus();return;}
-  const fields=[f.gymCustomWeight,f.gymCustomSets,f.gymCustomReps];
-  const invalid=fields.find(input=>!input.validity.valid);
-  if(invalid){invalid.reportValidity();return;}
-  const [weight,sets,reps]=fields.map(input=>input.value===''?null:Number(input.value));
-  const match=[...azmGymRowsByName.values()].find(item=>item.row[0]===name||item.row[1].toLowerCase()===name.toLowerCase());
-  const row=[name,match?.row[1]||name,device||match?.row[2]||'تمرين يدوي'];
-  row.prescription={weight,sets,reps};
-  if(!match)row.targets=[];
-  draft.moves.push({id:crypto.randomUUID(),group:match?.group,row,custom:true,prescription:row.prescription});
+  if(f.gymCustomGroup.value==='لياقة'){
+   const duration=f.gymCustomMinutes,minutes=Number(duration.value);
+   if(!minutes||!duration.validity.valid){duration.focus();duration.reportValidity();return;}
+   draft.extra.push({name:device?name+' · '+device:name,minutes});
+   duration.value='';
+  }else{
+   const fields=[f.gymCustomWeight,f.gymCustomSets,f.gymCustomReps];
+   const invalid=fields.find(input=>!input.validity.valid);
+   if(invalid){invalid.reportValidity();return;}
+   const [weight,sets,reps]=fields.map(input=>input.value===''?null:Number(input.value));
+   const matches=[...azmGymRowsByName.values()].filter(item=>item.group!=='لياقة'&&(item.row[0]===name||item.row[1].toLowerCase()===name.toLowerCase()));
+   const match=matches.find(item=>item.group===f.gymCustomGroup.value)||matches[0];
+   const row=[name,match?.row[1]||name,device||match?.row[2]||'تمرين يدوي'];
+   row.prescription={weight,sets,reps};
+   if(!match)row.targets=[];
+   draft.moves.push({id:crypto.randomUUID(),group:match?.group,row,custom:true,prescription:row.prescription});
+   fields.forEach(input=>input.value='');
+  }
   f.gymCustomName.value='';
   f.gymCustomDevice.value='';
-  fields.forEach(input=>input.value='');
+  f.gymCustomNameChoice.value='';
+  f.gymCustomDeviceChoice.value='';
  }
  azmGymSaveDraft(draft);
  azmGymRefreshPlan(form);
@@ -1199,11 +1226,13 @@ function azmGymPlanner(){
  <section class="full" aria-labelledby="gymCustomTitle">
  <div class="sectionHead"><h2 id="gymCustomTitle">أضف تمرين من عندك</h2></div>
  <div class="formGrid">
- <div class="field"><label for="gymCustomName">اسم التمرين</label><input id="gymCustomName" name="gymCustomName" maxlength="100" placeholder="اكتب اسم التمرين"></div>
- <div class="field"><label for="gymCustomDevice">اسم الجهاز أو المعدّة (اختياري)</label><input id="gymCustomDevice" name="gymCustomDevice" maxlength="100" placeholder="اكتب اسم الجهاز"></div>
- <div class="field"><label for="gymCustomWeight">الوزن بالكجم (اختياري)</label><input id="gymCustomWeight" name="gymCustomWeight" type="number" min="0" max="1000" step="0.5"></div>
- <div class="field"><label for="gymCustomSets">الجولات</label><input id="gymCustomSets" name="gymCustomSets" type="number" min="1" max="30"></div>
- <div class="field"><label for="gymCustomReps">التكرارات لكل جولة</label><input id="gymCustomReps" name="gymCustomReps" type="number" min="1" max="200"></div>
+ <div class="field full"><label for="gymCustomGroup">قسم التمرين</label><select id="gymCustomGroup" name="gymCustomGroup" onchange="azmGymCustomPick(this)"><option value="">اختر قسم من المكتبة</option>${groups.map(group=>`<option>${safe(group)}</option>`).join('')}</select></div>
+ <div class="field"><label for="gymCustomNameChoice">اختر اسم التمرين</label><select id="gymCustomNameChoice" name="gymCustomNameChoice" onchange="azmGymCustomPick(this)"><option value="">اختر تمريناً</option></select><input id="gymCustomName" name="gymCustomName" maxlength="100" aria-label="اسم التمرين" placeholder="أو اكتب اسم التمرين"></div>
+ <div class="field"><label for="gymCustomDeviceChoice">اختر الجهاز أو الأداة</label><select id="gymCustomDeviceChoice" name="gymCustomDeviceChoice" onchange="azmGymCustomPick(this)"><option value="">اختر جهازاً أو أداة</option></select><input id="gymCustomDevice" name="gymCustomDevice" maxlength="100" aria-label="اسم الجهاز أو الأداة" placeholder="أو اكتب اسم الجهاز (اختياري)"></div>
+ <div data-gym-cardio-inputs hidden><label class="field">مدة الكارديو بالدقايق<input name="gymCustomMinutes" type="number" min="1" max="240" step="1"></label></div>
+ <div data-gym-resistance-inputs><label for="gymCustomWeight">الوزن بالكجم (اختياري)</label><input id="gymCustomWeight" name="gymCustomWeight" type="number" min="0" max="1000" step="0.5"></div>
+ <div data-gym-resistance-inputs><label for="gymCustomSets">الجولات</label><input id="gymCustomSets" name="gymCustomSets" type="number" min="1" max="30"></div>
+ <div data-gym-resistance-inputs><label for="gymCustomReps">التكرارات لكل جولة</label><input id="gymCustomReps" name="gymCustomReps" type="number" min="1" max="200"></div>
  <button class="button full" type="button" onclick="azmGymChangeDraft(this,'custom')">أضف للجدول</button>
  </div></section>
 
