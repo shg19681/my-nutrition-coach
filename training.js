@@ -1077,7 +1077,12 @@ function azmGymDraft(date=trainingDate||dateNow()){
  if(!azmGymDayDrafts.has(key)){
   let saved=null;
   try{saved=JSON.parse(localStorage.getItem(key));}catch{}
-  const draft=saved||{types:[],moves:[],cardio:null,extra:[],checks:{}};
+  const draft=saved||{types:[],moves:[],extra:[],checks:{}};
+  const previousChoice=azmGymCardioRow(draft.cardio)??azmGymCatalog['لياقة'][draft.cardio];
+  if(previousChoice&&!draft.extra.some(item=>item.activity===previousChoice[1]||item.name===previousChoice[0])){
+   draft.extra.unshift({name:previousChoice[0],activity:previousChoice[1]});
+  }
+  delete draft.cardio;
   draft.moves.forEach(move=>{
    if(move.prescription)move.row.prescription=move.prescription;
    if(!move.group)move.row.targets=[];
@@ -1138,8 +1143,7 @@ function azmGymPlan(draft,firstWeek,introLevel){
  const moves=[...recommendations,...draft.moves];
  const legs=moves.some(item=>item.group==='أرجل');
  const options=azmGymCatalog['لياقة'];
- const selected=options.find(row=>row[1]===draft.cardio)??options[draft.cardio];
- const cardio=selected??options[legs?3:0];
+ const cardio=options[legs?3:0];
  const easy=firstWeek||introLevel;
  const time=easy?'٨–١٢':legs?'١٠–١٥':moves.length?'١٢–٢٠':'١٥–٢٥';
  return {moves,cardio,time,legs,easy,active:firstWeek||routines.length>0};
@@ -1185,13 +1189,16 @@ function azmGymCustomPick(select){
 function azmGymCardioRow(value){
  return azmGymCatalog['لياقة'].find(row=>row[1]===value);
 }
-function azmGymCardioOptions(selected){
- return azmGymCatalog['لياقة'].map((row,index)=>
-  '<option value="'+safe(row[1])+'" '+(selected===row[1]||selected===index?'selected':'')+'>'+safe(row[0])+'</option>'
+function azmGymCardioOptions(){
+ return azmGymCatalog['لياقة'].map(row=>
+  '<option value="'+safe(row[1])+'">'+safe(row[0])+'</option>'
  ).join('');
 }
 function azmGymCardioMedia(row){
- return '<div style="margin-block:8px"><p style="margin:0 0 8px">'+azmGymVideo(row)+'</p>'+azmGymTargetHtml(row,'لياقة')+'</div>';
+ const id=azmGymVideoIds[row[1]];
+ return `<div data-gym-video-preview style="margin-block:8px">
+ <div class="flex">${id?`<button type="button" class="button secondary" data-video-id="${id}" onclick="azmGymPlayVideo(this)">شغّل الفيديو هنا</button>`:''}${azmGymVideo(row)}</div>
+ ${azmGymTargetHtml(row,'لياقة')}</div>`;
 }
 function azmGymPreviewCardio(select){
  const form=select.form;
@@ -1210,12 +1217,22 @@ function azmGymChangeDraft(button,action,index){
   if(removed)delete draft.checks['custom:'+removed.id];
  }
  else if(action==='removeCardio')draft.extra.splice(index,1);
+ else if(action==='addSuggestedCardio'){
+  const row=azmGymCardioRow(button.dataset.activity);
+  if(!row)return;
+  const existing=draft.extra.findIndex(item=>item.activity===row[1]||item.name===row[0]);
+  if(existing!==-1){
+   form.querySelector(`[data-gym-cardio-entry="${existing}"] [data-cardio-field="minutes"]`)?.focus();
+   return;
+  }
+  draft.extra.push({name:row[0],activity:row[1]});
+ }
  else if(action==='addCardio'){
   const field=f.gymExtraType.value==='other'?f.gymExtraName:f.gymExtraType;
   const row=azmGymCardioRow(f.gymExtraType.value);
   const name=row?.[0]??field.value.trim(),minutes=Number(f.gymExtraMinutes.value);
   if(!name){field.focus();return;}
-  if(!minutes||!f.gymExtraMinutes.validity.valid){f.gymExtraMinutes.focus();f.gymExtraMinutes.reportValidity();return;}
+  if(!f.gymExtraMinutes.validity.valid){f.gymExtraMinutes.focus();f.gymExtraMinutes.reportValidity();return;}
   draft.extra.push(row?{name,minutes,activity:row[1]}:{name,minutes});
   f.gymExtraType.value='';
   f.gymExtraName.value='';
@@ -1265,13 +1282,50 @@ function azmGymSelectType(button){
  azmGymSaveDraft(draft);
  azmGymRefreshPlan(button.closest('form'));
 }
-function azmGymSelectCardio(select){
- const draft=azmGymDraft();
- draft.cardio=azmGymCardioRow(select.value)?.[1]??null;
- azmGymSaveDraft(draft);
- const form=select.closest('form');
- azmGymRefreshPlan(form);
- form.elements.gymCardio?.focus();
+function azmGymMediaUrl(value){
+ try{
+  const url=new URL(value);
+  return url.protocol==='https:'?url.href:'';
+ }catch{return '';}
+}
+function azmGymUpdateCardio(input){
+ const card=input.closest('[data-gym-cardio-entry]');
+ const draft=azmGymDraft(),item=draft.extra[Number(card.dataset.gymCardioEntry)];
+ if(!item)return;
+ const field=input.dataset.cardioField,value=input.value.trim();
+ if(!input.validity.valid||((field==='image'||field==='video')&&value&&!azmGymMediaUrl(value))){
+  input.value=item[field]??'';
+  card.querySelector('[data-cardio-status]').textContent='تأكد من القيمة أو استخدم رابط يبدأ بـ https://.';
+  return;
+ }
+ item[field]=field==='done'?input.checked:input.type==='number'?(value?Number(value):''):value;
+ card.querySelector('[data-cardio-status]').textContent=azmGymSaveDraft(draft)?'':'تعذر حفظ التعديل على هالمتصفح.';
+ card.style.backgroundColor=item.done?'#eef7e7':'';
+ if(field==='image'||field==='video'){
+  card.querySelector('[data-cardio-manual-media]').innerHTML=azmGymManualCardioMedia(item);
+ }
+}
+function azmGymManualCardioMedia(item){
+ const image=azmGymMediaUrl(item.image),video=azmGymMediaUrl(item.video);
+ return `${image?`<img src="${safe(image)}" alt="${safe(item.name)}" loading="lazy" referrerpolicy="no-referrer" style="max-width:100%;max-height:180px;object-fit:contain">`:''}
+ ${video?`<p><a href="${safe(video)}" target="_blank" rel="noopener noreferrer">شاهد فيديو التمرين</a></p>`:''}`;
+}
+function azmGymCardioEntry(item,index){
+ const row=item.activity?azmGymCardioRow(item.activity):azmGymCatalog['لياقة'].find(row=>row[0]===item.name);
+ const label=safe(item.name);
+ return `<section class="card" data-gym-cardio-entry="${index}" aria-label="${label}" style="margin-block:8px;${item.done?'background-color:#eef7e7':''}">
+ <div class="flex"><h5 style="margin:0">${label}</h5>
+ <label class="checkline"><input type="checkbox" data-cardio-field="done" aria-label="تم ${label}" ${item.done?'checked':''} onchange="azmGymUpdateCardio(this)">تم</label>
+ <button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeCardio',${index})" aria-label="احذف ${label} من الكارديو">حذف</button></div>
+ ${row?azmGymCardioMedia(row):`<div data-cardio-manual-media>${azmGymManualCardioMedia(item)}</div>`}
+ <div class="formGrid">
+ <label class="field">المدة بالدقايق<input type="number" min="1" max="240" step="1" data-cardio-field="minutes" value="${safe(String(item.minutes||''))}" onchange="azmGymUpdateCardio(this)"></label>
+ <label class="field">المسافة (كم)<input type="number" min="0" step="0.01" data-cardio-field="distance" value="${safe(String(item.distance??''))}" onchange="azmGymUpdateCardio(this)"></label>
+ <label class="field">الشدة أو السرعة<input data-cardio-field="effort" maxlength="100" value="${safe(item.effort||'')}" onchange="azmGymUpdateCardio(this)"></label>
+ <label class="field">ملاحظات<input data-cardio-field="notes" maxlength="300" value="${safe(item.notes||'')}" onchange="azmGymUpdateCardio(this)"></label>
+ ${row?'':`<label class="field">رابط الصورة (اختياري)<input type="url" maxlength="2048" data-cardio-field="image" value="${safe(item.image||'')}" onchange="azmGymUpdateCardio(this)"></label>
+ <label class="field">رابط الفيديو (اختياري)<input type="url" maxlength="2048" data-cardio-field="video" value="${safe(item.video||'')}" onchange="azmGymUpdateCardio(this)"></label>`}
+ </div><p class="hint" data-cardio-status aria-live="polite"></p></section>`;
 }
 
 function azmGymPlanner(){
@@ -1318,7 +1372,7 @@ function azmGymPlanner(){
  <option value="">اختر نشاط كارديو</option>${azmGymCardioOptions()}<option value="other">أضف نشاط يدويًا</option></select></label>
  <div class="full" data-gym-extra-preview hidden></div>
  <label class="field" hidden style="display:none">اسم الكارديو<input name="gymExtraName" maxlength="100"></label>
- <label class="field">المدة بالدقايق<input name="gymExtraMinutes" type="number" min="1" max="240" step="1"></label>
+ <label class="field">المدة بالدقايق (اختياري)<input name="gymExtraMinutes" type="number" min="1" max="240" step="1"></label>
  <button class="button full" type="button" onclick="azmGymChangeDraft(this,'addCardio')">أضف الكارديو للجدول</button>
  </div></section>
 `:''}
@@ -1342,7 +1396,7 @@ function azmGymPlanner(){
 }
 function azmGymPlanHtml(draft,firstWeek,introLevel){
  const p=azmGymPlan(draft,firstWeek,introLevel);
- if(!p.active&&!p.moves.length&&!draft.extra.length)return '<p class="hint">اختَر نوع تمرين اليوم عشان يطلع لك الجدول.</p>';
+
  const warmup=p.legs?'ابدأ بمشي خفيف أو دراجة، بعدها حرّك الكاحل والورك بمدى مريح.':p.moves.length?'ابدأ بمشي خفيف، بعدها حرّك المفاصل اللي تستخدمها اليوم بمدى مريح.':'ابدأ على جهاز الكارديو بوتيرة سهلة وزِدها تدريجيًا.';
  const rows=p.moves.map(({row,group,custom,id})=>{
   const timed=/بلانك|توازن|حمل|مشي المزارع/.test(row[0]);
@@ -1364,13 +1418,12 @@ function azmGymPlanHtml(draft,firstWeek,introLevel){
  return `<div class="card" style="margin-top:12px;padding:14px"><h3>جدول تمرين اليوم</h3>
  <h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${p.moves.length?' سوّ جولة خفيفة من أول تمرين قبل وزن التمرين.':''}</p>
  ${rows?`<h4>الحديد والمقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والوزن والتكرارات</th><th>الشرح</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">اختَر وزن تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p><p class="hint" data-gym-save-status aria-live="polite"></p>`:''}
- <h4>الكارديو${rows?' بعد المقاومة':''}</h4>
+ <section aria-labelledby="gymSuggestedCardio">
+ <h4 id="gymSuggestedCardio">الكارديو المقترح${rows?' بعد المقاومة':''}</h4>
  <p><strong>${safe(p.cardio[0])}</strong> · ${p.time} دقيقة بوتيرة تقدر تتكلم معها. اختم بخمس دقايق بوتيرة أخف.</p>
- <label class="field">غيّر الكارديو<select name="gymCardio" onchange="azmGymSelectCardio(this)"><option value="">الاقتراح التلقائي</option>${azmGymCardioOptions(draft.cardio)}</select></label>
  ${azmGymCardioMedia(p.cardio)}
- ${draft.extra.length?`<h4>الكارديو الإضافي</h4><ul>${draft.extra.map((item,i)=>{
-  const row=item.activity?azmGymCardioRow(item.activity):azmGymCatalog['لياقة'].find(row=>row[0]===item.name);
-  return `<li>${safe(item.name)} · ${fmt(item.minutes)} دقيقة <button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeCardio',${i})" aria-label="احذف ${safe(item.name)} من الكارديو">حذف</button>${row?azmGymCardioMedia(row):''}</li>`;
- }).join('')}</ul>`:''}
+ <button type="button" class="button secondary" data-activity="${safe(p.cardio[1])}" onclick="azmGymChangeDraft(this,'addSuggestedCardio')">أضف المقترح لتماريني</button>
+ </section>
+ ${draft.extra.length?`<h4>تمارين الكارديو اللي اخترتها</h4>${draft.extra.map(azmGymCardioEntry).join('')}`:''}
  </div>`;
 }
