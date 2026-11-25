@@ -1,15 +1,671 @@
 /* Session records share the existing per-user coach_settings cloud row. */
 
-const exerciseOptionsByGroup={
- 'صدر':[['ضغط صدر','جهاز ضغط الصدر'],['بنش برس','بار'],['ضغط صدر مائل','دامبل'],['تفتيح صدر','جهاز بيك ديك'],['كروس أوفر','كيبل']],
- 'ظهر':[['سحب أمامي','جهاز السحب العلوي'],['تجديف جالس','كيبل'],['تجديف مسنود الصدر','جهاز تجديف مسنود الصدر'],['تجديف يد واحدة','دامبل']],
- 'أرجل':[['ضغط الأرجل','جهاز ضغط الأرجل'],['سكوات','بار'],['هاك سكوات','جهاز هاك سكوات'],['تمديد الركبة','جهاز ليج إكستنشن'],['ثني الركبة','جهاز ليج كيرل'],['رفع السمانة','جهاز السمانة']],
- 'أكتاف':[['ضغط كتف','جهاز ضغط الكتف'],['رفع جانبي','دامبل'],['رفرفة خلفية','جهاز بيك ديك عكسي'],['سحب للوجه','كيبل']],
- 'باي':[['ثني باي','دامبل'],['باي بريتشر','جهاز بريتشر'],['باي كيبل','كيبل']],
- 'تراي':[['دفع تراي للأسفل','كيبل'],['تمديد تراي فوق الرأس','دامبل'],['غطس تراي','جهاز غطس مساعد']],
- 'بطن':[['كرنش','جهاز البطن'],['بلانك','وزن الجسم'],['ديد بق','بساط']],
- 'لياقة':[['مشي','سير'],['دراجة','دراجة ثابتة'],['تجديف كارديو','جهاز تجديف'],['إليبتكال','جهاز إليبتكال']],
+const azmGymCatalog={
+ "صدر": [
+  [
+   "ضغط صدر جهاز",
+   "Chest press",
+   "جهاز ضغط الصدر"
+  ],
+  [
+   "ضغط صدر مائل جهاز",
+   "Incline chest press",
+   "جهاز ضغط صدر مائل"
+  ],
+  [
+   "بنش برس مسطح",
+   "Barbell bench press",
+   "بار وبنش"
+  ],
+  [
+   "بنش مائل",
+   "Incline barbell bench press",
+   "بار وبنش"
+  ],
+  [
+   "ضغط دامبل مسطح",
+   "Dumbbell bench press",
+   "دامبل وبنش"
+  ],
+  [
+   "ضغط دامبل مائل",
+   "Incline dumbbell press",
+   "دامبل وبنش"
+  ],
+  [
+   "تفتيح دامبل",
+   "Dumbbell fly",
+   "دامبل وبنش"
+  ],
+  [
+   "تفتيح بيك ديك",
+   "Pec deck fly",
+   "جهاز بيك ديك"
+  ],
+  [
+   "كروس أوفر",
+   "Cable crossover",
+   "كيبل"
+  ],
+  [
+   "ضغط صدر سميث",
+   "Smith bench press",
+   "سميث"
+  ],
+  [
+   "بوش أب",
+   "Push up",
+   "وزن الجسم"
+  ],
+  [
+   "ضغط مطاط",
+   "Band chest press",
+   "مطاط"
+  ],
+  [
+   "غطس صدر مساعد",
+   "Assisted chest dip",
+   "جهاز مساعد"
+  ]
+ ],
+ "ظهر": [
+  [
+   "سحب أمامي",
+   "Lat pulldown",
+   "جهاز السحب العلوي"
+  ],
+  [
+   "سحب أمامي قبضة محايدة",
+   "Neutral grip lat pulldown",
+   "جهاز السحب العلوي"
+  ],
+  [
+   "سحب أمامي يد واحدة",
+   "Single arm cable pulldown",
+   "كيبل"
+  ],
+  [
+   "تجديف جالس",
+   "Seated cable row",
+   "كيبل"
+  ],
+  [
+   "تجديف مسنود الصدر",
+   "Chest supported row",
+   "جهاز تجديف"
+  ],
+  [
+   "تجديف يد واحدة",
+   "One arm dumbbell row",
+   "دامبل وبنش"
+  ],
+  [
+   "تجديف بار",
+   "Barbell bent over row",
+   "بار"
+  ],
+  [
+   "تجديف تي بار",
+   "T bar row",
+   "تي بار"
+  ],
+  [
+   "سحب علوي مساعد",
+   "Assisted pull up",
+   "جهاز مساعد"
+  ],
+  [
+   "عقلة",
+   "Pull up",
+   "عقلة"
+  ],
+  [
+   "تجديف TRX",
+   "TRX row",
+   "TRX"
+  ],
+  [
+   "سحب مستقيم الذراع",
+   "Straight arm pulldown",
+   "كيبل"
+  ],
+  [
+   "تمديد الظهر",
+   "Back extension",
+   "بنش تمديد ظهر"
+  ],
+  [
+   "تجديف مطاط",
+   "Resistance band row",
+   "مطاط"
+  ],
+  [
+   "تجديف لاندماين",
+   "Landmine row",
+   "لاندماين"
+  ],
+  [
+   "تجديف مرتفع",
+   "High row machine",
+   "جهاز هاي رو"
+  ]
+ ],
+ "أرجل": [
+  [
+   "ضغط الأرجل",
+   "Leg press",
+   "جهاز ضغط الأرجل"
+  ],
+  [
+   "هاك سكوات",
+   "Hack squat",
+   "جهاز هاك سكوات"
+  ],
+  [
+   "بندول سكوات",
+   "Pendulum squat",
+   "جهاز بندول"
+  ],
+  [
+   "سكوات سميث",
+   "Smith squat",
+   "سميث"
+  ],
+  [
+   "سكوات خلفي",
+   "Barbell back squat",
+   "بار وراك"
+  ],
+  [
+   "سكوات أمامي",
+   "Front squat",
+   "بار وراك"
+  ],
+  [
+   "غوبلت سكوات",
+   "Goblet squat",
+   "كيتل بيل"
+  ],
+  [
+   "سكوات صندوق",
+   "Box squat",
+   "صندوق"
+  ],
+  [
+   "لانجز دامبل",
+   "Dumbbell lunge",
+   "دامبل"
+  ],
+  [
+   "بلغاريان سبليت سكوات",
+   "Bulgarian split squat",
+   "دامبل وبنش"
+  ],
+  [
+   "صعود صندوق",
+   "Step up",
+   "صندوق"
+  ],
+  [
+   "تمديد الركبة",
+   "Leg extension",
+   "جهاز ليج إكستنشن"
+  ],
+  [
+   "ثني الركبة جالس",
+   "Seated leg curl",
+   "جهاز ليج كيرل جالس"
+  ],
+  [
+   "ثني الركبة مستلقي",
+   "Lying leg curl",
+   "جهاز ليج كيرل مستلقي"
+  ],
+  [
+   "ديدلفت روماني",
+   "Romanian deadlift",
+   "بار"
+  ],
+  [
+   "ديدلفت روماني دامبل",
+   "Dumbbell Romanian deadlift",
+   "دامبل"
+  ],
+  [
+   "هيب ثرست بار",
+   "Barbell hip thrust",
+   "بار وبنش"
+  ],
+  [
+   "هيب ثرست جهاز",
+   "Machine hip thrust",
+   "جهاز غلوت درايف"
+  ],
+  [
+   "جسر الأرداف",
+   "Glute bridge",
+   "بساط"
+  ],
+  [
+   "دفع خلفي بالرجل",
+   "Cable glute kickback",
+   "كيبل"
+  ],
+  [
+   "فتح الفخذ",
+   "Hip abduction",
+   "جهاز فتح الفخذ"
+  ],
+  [
+   "ضم الفخذ",
+   "Hip adduction",
+   "جهاز ضم الفخذ"
+  ],
+  [
+   "سمانة واقف",
+   "Standing calf raise",
+   "جهاز سمانة واقف"
+  ],
+  [
+   "سمانة جالس",
+   "Seated calf raise",
+   "جهاز سمانة جالس"
+  ],
+  [
+   "بيلت سكوات",
+   "Belt squat",
+   "جهاز بيلت سكوات"
+  ],
+  [
+   "سبليت سكوات وزن الجسم",
+   "Bodyweight split squat",
+   "وزن الجسم"
+  ],
+  [
+   "كيرل خلفية على الكرة",
+   "Stability ball hamstring curl",
+   "كرة توازن"
+  ]
+ ],
+ "أكتاف": [
+  [
+   "ضغط كتف",
+   "Machine shoulder press",
+   "جهاز ضغط الكتف"
+  ],
+  [
+   "ضغط كتف دامبل",
+   "Dumbbell shoulder press",
+   "دامبل وبنش"
+  ],
+  [
+   "ضغط كتف بار",
+   "Barbell overhead press",
+   "بار"
+  ],
+  [
+   "ضغط لاندماين",
+   "Landmine press",
+   "لاندماين"
+  ],
+  [
+   "رفع جانبي",
+   "Dumbbell lateral raise",
+   "دامبل"
+  ],
+  [
+   "رفع جانبي كيبل",
+   "Cable lateral raise",
+   "كيبل"
+  ],
+  [
+   "رفع جانبي جهاز",
+   "Machine lateral raise",
+   "جهاز رفع جانبي"
+  ],
+  [
+   "رفع أمامي",
+   "Dumbbell front raise",
+   "دامبل"
+  ],
+  [
+   "رفرفة خلفية",
+   "Reverse pec deck",
+   "جهاز بيك ديك عكسي"
+  ],
+  [
+   "رفرفة خلفية كيبل",
+   "Cable reverse fly",
+   "كيبل"
+  ],
+  [
+   "رفرفة خلفية دامبل",
+   "Dumbbell rear delt fly",
+   "دامبل"
+  ],
+  [
+   "سحب للوجه",
+   "Cable face pull",
+   "كيبل"
+  ],
+  [
+   "شراگ دامبل",
+   "Dumbbell shrug",
+   "دامبل"
+  ],
+  [
+   "شراگ بار",
+   "Barbell shrug",
+   "بار"
+  ],
+  [
+   "شراگ جهاز",
+   "Machine shrug",
+   "جهاز ترابيس"
+  ]
+ ],
+ "باي": [
+  [
+   "ثني باي دامبل",
+   "Dumbbell biceps curl",
+   "دامبل"
+  ],
+  [
+   "هامر كيرل",
+   "Hammer curl",
+   "دامبل"
+  ],
+  [
+   "باي بريتشر",
+   "Preacher curl",
+   "جهاز بريتشر"
+  ],
+  [
+   "باي بار EZ",
+   "EZ bar biceps curl",
+   "بار EZ"
+  ],
+  [
+   "باي كيبل",
+   "Cable bicep curl",
+   "كيبل"
+  ],
+  [
+   "باي تركيز",
+   "Concentration curl",
+   "دامبل"
+  ],
+  [
+   "باي مائل",
+   "Incline dumbbell curl",
+   "دامبل وبنش"
+  ],
+  [
+   "باي مطاط",
+   "Resistance band biceps curl",
+   "مطاط"
+  ],
+  [
+   "باي عكسي",
+   "Reverse curl",
+   "بار EZ"
+  ]
+ ],
+ "تراي": [
+  [
+   "دفع تراي للأسفل",
+   "Triceps rope pushdown",
+   "كيبل"
+  ],
+  [
+   "دفع تراي يد واحدة",
+   "Single arm triceps pushdown",
+   "كيبل"
+  ],
+  [
+   "تمديد تراي فوق الرأس كيبل",
+   "Overhead cable triceps extension",
+   "كيبل"
+  ],
+  [
+   "تمديد تراي دامبل",
+   "Dumbbell triceps extension",
+   "دامبل"
+  ],
+  [
+   "سكال كراشر",
+   "EZ bar skull crusher",
+   "بار EZ"
+  ],
+  [
+   "غطس تراي مساعد",
+   "Assisted tricep dip",
+   "جهاز مساعد"
+  ],
+  [
+   "ضغط ضيق",
+   "Close grip bench press",
+   "بار وبنش"
+  ],
+  [
+   "تراي كيك باك",
+   "Dumbbell triceps kickback",
+   "دامبل"
+  ],
+  [
+   "دفع مطاط تراي",
+   "Resistance band pushdown",
+   "مطاط"
+  ]
+ ],
+ "بطن": [
+  [
+   "كرنش",
+   "Machine abdominal crunch",
+   "جهاز البطن"
+  ],
+  [
+   "كرنش كيبل",
+   "Cable crunch",
+   "كيبل"
+  ],
+  [
+   "بلانك",
+   "Plank",
+   "بساط"
+  ],
+  [
+   "بلانك جانبي",
+   "Side plank",
+   "بساط"
+  ],
+  [
+   "ديد بق",
+   "Dead bug",
+   "بساط"
+  ],
+  [
+   "بيرد دوغ",
+   "Bird dog",
+   "بساط"
+  ],
+  [
+   "رفع الركبة",
+   "Captain chair knee raise",
+   "جهاز رفع الركب"
+  ],
+  [
+   "رفع ركبة معلق",
+   "Hanging knee raise",
+   "عقلة"
+  ],
+  [
+   "بالوف برس",
+   "Pallof press",
+   "كيبل"
+  ],
+  [
+   "وود تشوب",
+   "Cable wood chop",
+   "كيبل"
+  ],
+  [
+   "عجلة البطن",
+   "Ab wheel rollout",
+   "عجلة بطن"
+  ],
+  [
+   "كرنش كرة",
+   "Stability ball crunch",
+   "كرة توازن"
+  ],
+  [
+   "حمل الدمبل بجانب واحد",
+   "Suitcase carry",
+   "دامبل"
+  ]
+ ],
+ "تمارين وظيفية": [
+  [
+   "مشي المزارع",
+   "Farmer carry",
+   "دامبل"
+  ],
+  [
+   "دفع الزلاجة",
+   "Sled push",
+   "زلاجة"
+  ],
+  [
+   "سحب الزلاجة",
+   "Sled drag",
+   "زلاجة"
+  ],
+  [
+   "حبال قتالية",
+   "Battle ropes",
+   "حبال قتالية"
+  ],
+  [
+   "كيتل بيل سوينغ",
+   "Kettlebell swing",
+   "كيتل بيل"
+  ],
+  [
+   "رمي كرة طبية",
+   "Medicine ball slam",
+   "كرة طبية"
+  ],
+  [
+   "صعود صندوق وظيفي",
+   "Bodyweight step up",
+   "صندوق"
+  ],
+  [
+   "سكوات TRX",
+   "TRX squat",
+   "TRX"
+  ],
+  [
+   "مشي جانبي مطاط",
+   "Lateral band walk",
+   "مطاط"
+  ],
+  [
+   "قفز حبل",
+   "Jump rope",
+   "حبل نط"
+  ],
+  [
+   "دوران صدري",
+   "Open book thoracic rotation",
+   "بساط"
+  ],
+  [
+   "حركة الكاحل",
+   "Knee to wall ankle mobility",
+   "وزن الجسم"
+  ],
+  [
+   "مشي مشية الدب",
+   "Bear crawl",
+   "بساط"
+  ],
+  [
+   "توازن رجل واحدة",
+   "Single leg balance",
+   "وزن الجسم"
+  ]
+ ],
+ "لياقة": [
+  [
+   "مشي على السير",
+   "Treadmill walking",
+   "سير"
+  ],
+  [
+   "مشي مائل",
+   "Incline treadmill walking",
+   "سير"
+  ],
+  [
+   "جري خفيف",
+   "Treadmill jogging",
+   "سير"
+  ],
+  [
+   "دراجة ثابتة",
+   "Stationary bike",
+   "دراجة ثابتة"
+  ],
+  [
+   "دراجة راقدة",
+   "Recumbent bike",
+   "دراجة راقدة"
+  ],
+  [
+   "سبيننغ",
+   "Indoor cycling",
+   "دراجة سبيننغ"
+  ],
+  [
+   "إليبتكال",
+   "Elliptical",
+   "إليبتكال"
+  ],
+  [
+   "درج",
+   "Stair climber",
+   "جهاز درج"
+  ],
+  [
+   "تجديف كارديو",
+   "Indoor rowing",
+   "جهاز تجديف"
+  ],
+  [
+   "سكي إرغ",
+   "Concept2 SkiErg",
+   "سكي إرغ"
+  ],
+  [
+   "إير بايك",
+   "Air bike",
+   "إير بايك"
+  ],
+  [
+   "سباحة",
+   "Swimming freestyle",
+   "مسبح"
+  ],
+  [
+   "مشي على الأرض",
+   "Brisk walking",
+   "مسار مشي"
+  ]
+ ]
 };
+const exerciseOptionsByGroup=Object.fromEntries(Object.entries(azmGymCatalog).map(([group,rows])=>[group,rows.map(([name,,equipment])=>[name,equipment])]));
 function exerciseChoiceOptions(group, field){
  const saved=Object.values(state.training||{}).flatMap(s=>s.exercises||[]).filter(x=>x.group===group).map(x=>x[field?'device':'name']);
  return [...new Set([...(exerciseOptionsByGroup[group]||[]).map(x=>x[field]),...saved].filter(Boolean))].map(x=>'<option value="'+safe(x)+'">'+safe(x)+'</option>').join('');
@@ -30,7 +686,7 @@ function refreshExerciseChoices(form, suggestDevice=false){
  }
 }
 
-const muscleGroups=['صدر','ظهر','أرجل','أكتاف','باي','تراي','بطن','لياقة'];
+const muscleGroups=Object.keys(azmGymCatalog);
 const cardioTypes=['مشي','مشي على السير','جري','دراجة','غزالة','إليبتيكال','درج','سباحة','تجديف','أخرى'];
 const cardioPhotoDrafts=new Map(),cardioPhotoJobs=new Map();
 const TRAINING_PHOTO_BUCKET='training-photos',trainingPhotoUrlCache=new Map();
@@ -89,8 +745,8 @@ function trainingSummary(s){
 }
 function trainingPage(){
  const date=trainingDate||dateNow(),s=sessionFor(date),a=trainingSummary(s);
- if(s.completed&&trainingExpandedDate!==date)return `${completedSessionBar(s,date)}${trainingHistory(date)}`;
- return `<div class="card"><h3>تمرين اليوم</h3><div class="field"><label for="trainingDate">التاريخ</label><input id="trainingDate" type="date" value="${safe(date)}" onchange="trainingDate=this.value;render()"></div><div class="flex" style="margin:16px 0"><button class="button ${s.status==='trained'?'':'secondary'}" onclick="setTrainingStatus('trained')">تمرنت</button><button class="button ${s.status==='rest'?'':'secondary'}" onclick="setTrainingStatus('rest')">راحة</button><span class="hint">${s.status==='unlogged'?'لم تسجّل حالة هذا اليوم':s.status==='rest'?'يوم راحة':'يوم تمرين'}</span></div>${s.status==='trained'?`
+ if(s.completed&&trainingExpandedDate!==date)return `${azmGymPlanner()}${completedSessionBar(s,date)}${trainingHistory(date)}`;
+ return `${azmGymPlanner()}<div class="card"><h3>تمرين اليوم</h3><div class="field"><label for="trainingDate">التاريخ</label><input id="trainingDate" type="date" value="${safe(date)}" onchange="trainingDate=this.value;render()"></div><div class="flex" style="margin:16px 0"><button class="button ${s.status==='trained'?'':'secondary'}" onclick="setTrainingStatus('trained')">تمرنت</button><button class="button ${s.status==='rest'?'':'secondary'}" onclick="setTrainingStatus('rest')">راحة</button><span class="hint">${s.status==='unlogged'?'لم تسجّل حالة هذا اليوم':s.status==='rest'?'يوم راحة':'يوم تمرين'}</span></div>${s.status==='trained'?`
  <form class="formGrid" onsubmit="saveTrainingDetails(event)"><fieldset class="full musclePicker"><legend>اختر كل الأقسام التي تمرنتها</legend>${muscleGroups.map(g=>`<label class="checkline"><input type="checkbox" name="group" value="${g}" ${s.groups.includes(g)?'checked':''}>${g}</label>`).join('')}</fieldset><div class="field"><label for="resistanceMinutes">مدة المقاومة بالدقائق، تشمل الراحة بين الجولات</label><input id="resistanceMinutes" name="minutes" type="number" min="0" max="300" value="${s.minutes||0}" required></div><fieldset class="full musclePicker"><legend>${tr('الكارديو')}</legend>${cardioEditor(s)}${cardioPhotoPicker(date,s)}<p class="hint full">${tr('تقدر تسجّل كارديو فقط وتخلي مدة المقاومة صفر. مدة الكارديو منفصلة عن المقاومة.')}</p></fieldset><label class="checkline full"><input type="checkbox" name="pain" ${s.pain?'checked':''}>يوجد ألم أثناء التمرين، خصوصاً الكتف</label><button id="trainingDetailsSave" class="button full" ${cardioPhotoJobs.has(date)?'disabled':''}>حفظ تفاصيل الجلسة</button></form>
  <div class="sectionHead"><h2>أضف تمريناً أو مجموعة جولات</h2></div><form id="exerciseForm" class="formGrid" onsubmit="addExercise(event)"><div class="field full"><label for="exerciseGroup">القسم الأساسي للتمرين</label><select name="group" id="exerciseGroup" onchange="refreshExerciseChoices(this.form)">${muscleGroups.map(g=>`<option>${safe(g)}</option>`).join('')}</select></div><div class="field"><label for="exerciseName">اسم التمرين</label><select id="exerciseNameOptions" aria-label="اختيارات اسم التمرين" onchange="if(this.value){this.form.elements.name.value=this.value;this.form.elements.device.value='';refreshExerciseChoices(this.form,true)}"><option value="">اختر من القائمة</option>${exerciseChoiceOptions(muscleGroups[0],0)}</select><input id="exerciseName" name="name" maxlength="100" required placeholder="أو اكتب اسم التمرين"></div><div class="field"><label for="exerciseDevice">اسم الجهاز أو المعدّة (اختياري)</label><select id="exerciseDeviceOptions" aria-label="اختيارات الجهاز" onchange="if(this.value)this.form.elements.device.value=this.value"><option value="">اختر من القائمة</option>${exerciseChoiceOptions(muscleGroups[0],1)}</select><input id="exerciseDevice" name="device" maxlength="100" placeholder="أو اكتب اسم الجهاز"></div><div class="field"><label for="exerciseWeight">الوزن الكلي المستخدم (كجم)، صفر لوزن الجسم</label><input id="exerciseWeight" name="weight" type="number" min="0" max="1000" step="0.5" required></div><div class="field"><label for="exerciseSets">الجولات بنفس الوزن والتكرارات</label><input id="exerciseSets" name="sets" type="number" min="1" max="30" value="3" required></div><div class="field"><label for="exerciseReps">التكرارات لكل جولة</label><input id="exerciseReps" name="reps" type="number" min="1" max="200" value="10" required></div><div class="field full"><label for="exercisePhoto">صورة الجهاز (اختيارية)</label><input id="exercisePhoto" type="file" accept="image/jpeg,image/png,image/webp" onchange="prepareTrainingPhoto(this)"><div id="photoStatus" class="hint"></div><img id="photoPreview" class="exercisePhoto" alt="معاينة صورة الجهاز" hidden></div><p class="hint full">إذا تغيّر الوزن أو التكرارات بين الجولات، أضف مجموعة جديدة بنفس اسم التمرين. الصورة تُحفظ مع السجل؛ ارجع لمحادثتك مع ChatGPT واطلب مراجعة التطبيق والصور بعد الحفظ.</p><button id="exerciseSave" class="button full">إضافة التمرين</button></form>
  </div>${restTimerCard()}${trainingRoutinePanel(s,date)}<div class="card" style="margin-top:16px"><div class="rowbetween"><h3>ملخص الجلسة</h3><div class="flex">${s.completed?`<button class="button ghost" onclick="collapseCompletedTraining()">إخفاء التفاصيل</button>`:''}<button class="button ${s.completed?'secondary':'primary'}" onclick="finishTraining('${date}')">${s.completed?'حفظ وإنهاء':'إنهاء التمرين وحفظه'}</button></div></div><p class="hint">${s.completed?'انتهى التمرين وحُفظ. تقدر ترجع تعدّل الجلسة متى ما احتجت.':'بعد آخر جولة، اضغط إنهاء التمرين لحفظ الجلسة ووضع علامة أنها انتهت.'}</p><button class="button secondary" onclick="copyCoachSummary(true)">نسخ الجلسة لـChatGPT</button><p class="hint">انسخ الجلسة والصقها في محادثتك، أو اطلب من المساعد فتح التطبيق ومراجعتها. أرفق الصور في المحادثة عند الحاجة.</p><div id="copyStatus" class="subtle" style="white-space:pre-wrap"></div><p>${safe(cardioDescription(s))}</p>${cardioPhotoImage(s.cardioPhoto)}<p>${fmt(s.exercises.length)} مجموعات تمارين مسجلة • ${fmt(a.sets)} جولة • حجم الأوزان ${fmt(a.volume)} كجم</p>${s.bodyWeight?`<p class="hint">الوزن المستخدم للتقدير: ${fmt(s.bodyWeight)} كجم، آخر وزن مسجل حتى هذا التاريخ.</p>`:''}<p>${a.energy?`طاقة المقاومة التقديرية: ${fmt(a.energy[0])} - ${fmt(a.energy[1])} سعرة إجمالية تشمل طاقة الراحة.`:'سجّل مدة المقاومة ووزناً بتاريخ الجلسة أو قبلها لإظهار تقدير الطاقة.'}</p><p class="hint">هذا نطاق تقريبي واسع حسب شدة الجلسة، وليس قياساً فعلياً ولا توصية بزيادة الأكل. لا يشمل الكارديو. حجم الأوزان لا يساوي سعرات، ولا يحسب وزن الجسم في تمارين وزن الجسم. <a href="https://pacompendium.com/conditioning-exercise/" target="_blank" rel="noopener">مرجع تقدير النشاط</a></p>${s.pain?'<p class="notice">سجّلت ألماً. أوقف الحركة المؤلمة ولا تزد الحمل عليها. راجع مختصاً لتقييم ألم الكتف قبل اقتراح تمارين له.</p>':''}${s.exercises.map((x,i)=>exerciseCard(x,i,date)).join('')||'<div class="empty">أضف أول تمرين للجلسة</div>'}</div>`:'</div>'}
@@ -220,3 +876,78 @@ async function prepareCardioPhoto(input){
 }
 
 function coachSummary(sessionOnly=false){return tr(coachSummarySource(sessionOnly));}
+let azmGymSelection={group:'صدر',exercise:0,equipment:'',level:'beginner',cardio:0,open:false};
+const azmGymDirectGuides={
+ 'Chest press':['فيديو جهاز Panatta','https://www.panattasport.com/en/fit-evo/vertical-chest-press-circular/'],
+ 'Incline chest press':['فيديو جهاز Panatta','https://www.panattasport.com/en/fit-evo/inclined-chest-press/'],
+ 'Leg press':['شرح ضغط الأرجل من NASM','https://www.nasm.org/resource-center/exercise-library/leg-press'],
+ 'Seated cable row':['شرح التجديف من ACE','https://www.acefitness.org/resources/everyone/exercise-library/48/seated-row/'],
+ 'Plank':['شرح البلانك من NASM','https://www.nasm.org/resource-center/exercise-library/plank'],
+ 'Dead bug':['فيديو Dead Bug من NASM','https://www.youtube.com/watch?v=bxn9FBrt4-A'],
+ 'Indoor rowing':['فيديو طريقة التجديف من Concept2','https://www.concept2.com/training/rowing-technique'],
+};
+function azmGymVideo(row){
+ const [,english]=row, direct=azmGymDirectGuides[english];
+ const query=encodeURIComponent(english+' exercise technique '+(row[2].startsWith('جهاز')?'Panatta Technogym':'NASM ACE'));
+ const link=(label,url)=>'<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+safe(label)+'</a>';
+ return (direct?link(...direct)+' · ':'')+link('بحث فيديو لهذا التمرين','https://www.youtube.com/results?search_query='+query);
+}
+function azmGymRows(group,equipment){
+ return (azmGymCatalog[group]||[]).filter(row=>!equipment||row[2]===equipment);
+}
+function azmGymPlan(settings){
+ const group=settings.group, rows=azmGymRows(group,settings.equipment), chosen=rows[settings.exercise]||rows[0];
+ const cardioRows=azmGymCatalog['لياقة'];
+ const cardio=group==='لياقة'?chosen:cardioRows[settings.cardio]||cardioRows[0];
+ const beginner=settings.level==='beginner';
+ const similar=group==='صدر'?['تراي']:group==='ظهر'?['باي']:group==='أرجل'?['بطن']:group==='أكتاف'?['بطن']:group==='باي'?['ظهر']:group==='تراي'?['صدر']:['بطن'];
+ const safeSupport=row=>!/ديدلفت|بندول|هاك سكوات|غطس|كيتل بيل سوينغ|عجلة|حبل|معلق|ضغط لاندماين|بيلت سكوات|بار|ألواح|عقلة|قفز|صعود صندوق/.test(row[0]);
+ const pool=similar.flatMap(name=>azmGymRows(name,settings.equipment));
+ const same=rows.filter(row=>row!==chosen&&safeSupport(row));
+ const support=[...new Set([...same.filter(row=>row[2]!==chosen?.[2]),...pool.filter(safeSupport),...same])];
+ const moves=group==='لياقة'||!chosen?[]:[chosen,...support.slice(0,beginner?2:3)];
+ return {chosen,cardio,moves,beginner};
+}
+function azmGymPlanner(){
+ const groups=Object.keys(azmGymCatalog);
+ return `<details class="card" ${azmGymSelection.open?'open':''} ontoggle="azmGymSelection.open=this.open"><summary><strong>مكتبة التمارين · جهّز حصة النادي</strong></summary>
+ <form class="formGrid" onchange="updateAzmGymPlan(this,event.target.name)" onsubmit="event.preventDefault()">
+ <label class="field">نوع التمرين<select name="gymGroup">${groups.map(g=>`<option ${g===azmGymSelection.group?'selected':''}>${safe(g)}</option>`).join('')}</select></label>
+ <label class="field">الجهاز أو الأداة<select name="gymEquipment">${azmGymEquipmentOptions(azmGymSelection)}</select></label>
+ <label class="field">التمرين الأساسي<select name="gymExercise">${azmGymExerciseOptions(azmGymSelection)}</select></label>
+ <label class="field">المستوى<select name="gymLevel"><option value="beginner" ${azmGymSelection.level==='beginner'?'selected':''}>مبتدئ</option><option value="regular" ${azmGymSelection.level==='regular'?'selected':''}>متمرّن بانتظام</option></select></label>
+ <label class="field">جهاز الكارديو<select name="gymCardio">${azmGymCatalog['لياقة'].map(([name],i)=>`<option value="${i}" ${i===azmGymSelection.cardio?'selected':''}>${safe(name)}</option>`).join('')}</select></label>
+ <div class="full" data-gym-plan>${azmGymPlanHtml(azmGymSelection)}</div>
+ <div class="full"><details><summary>تصفّح كل التمارين والأجهزة</summary>${groups.map(group=>`<details><summary>${safe(group)} · ${azmGymCatalog[group].length}</summary><ul>${azmGymCatalog[group].map(row=>`<li><strong>${safe(row[0])}</strong> · ${safe(row[2])}<br>${azmGymVideo(row)}</li>`).join('')}</ul></details>`).join('')}</details></div>
+ </form></details>`;
+}
+function azmGymEquipmentOptions(settings){
+ return '<option value="">كل الأجهزة والأدوات</option>'+[...new Set(azmGymRows(settings.group).map(row=>row[2]))].map(e=>`<option value="${safe(e)}" ${e===settings.equipment?'selected':''}>${safe(e)}</option>`).join('');
+}
+function azmGymExerciseOptions(settings){
+ return azmGymRows(settings.group,settings.equipment).map((row,i)=>`<option value="${i}" ${i===settings.exercise?'selected':''}>${safe(row[0])}</option>`).join('');
+}
+function updateAzmGymPlan(form,changed){
+ const f=form.elements;
+ if(changed==='gymGroup'||changed==='gymEquipment'){
+  azmGymSelection.group=f.gymGroup.value;
+  azmGymSelection.exercise=0;
+  azmGymSelection.equipment=changed==='gymGroup'?'':f.gymEquipment.value;
+  f.gymEquipment.innerHTML=azmGymEquipmentOptions(azmGymSelection);
+  f.gymExercise.innerHTML=azmGymExerciseOptions(azmGymSelection);
+ }else azmGymSelection.exercise=Number(f.gymExercise.value);
+ azmGymSelection.level=f.gymLevel.value;
+ azmGymSelection.cardio=Number(f.gymCardio.value);
+ form.querySelector('[data-gym-plan]').innerHTML=azmGymPlanHtml(azmGymSelection);
+}
+function azmGymPlanHtml(settings){
+ const p=azmGymPlan(settings);
+ const group=settings.group;
+ const warmup=group==='أرجل'?'مشي خفيف أو دراجة، بعدها حركة كاحل وحوض بدون حمل.':group==='لياقة'?'ابدأ على نفس الجهاز بوتيرة سهلة وزِدها تدريجيًا.':'مشي خفيف، بعدها حرّك المفاصل المستخدمة بمدى مريح.';
+ const primary=p.moves.length?` بعدها سوِّ جولة أو جولتين خفيفات من ${safe(p.chosen[0])} قبل جولات الشغل.`:'';
+ const resistance=p.moves.length?`<h4>المقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>الجولات والتكرار</th><th>الشرح</th></tr></thead><tbody>${p.moves.map((row,i)=>`<tr><td>${safe(row[0])}<br><small>${safe(row[2])}</small></td><td>${p.beginner?2:3} × ${/بلانك|توازن/.test(row[0])?'١٥–٣٠ ثانية':/حمل|مشي المزارع|زلاجة/.test(row[0])?'٢٠–٣٠ ثانية':i===0?'٨–١٢':'١٠–١٥'}</td><td>${azmGymVideo(row)}</td></tr>`).join('')}</tbody></table></div><p class="hint">ابدأ بحمل تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات، وأوقف الحركة إذا سببت ألمًا.</p>`:'';
+ const time=group==='أرجل'?(p.beginner?'٨–١٢':'١٠–١٥'):(p.beginner?'١٠–١٥':'١٥–٢٥');
+ return `<div class="card" style="margin-top:12px;padding:14px"><h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${primary}</p>${resistance}
+ <h4>الكارديو${p.moves.length?' بعد المقاومة':''}</h4><p>${safe(p.cardio[0])} · ${time} دقيقة. خلك على وتيرة تقدر تتكلم معها، واختتم بحركة خفيفة ٥ دقايق.</p><p>${azmGymVideo(p.cardio)}</p>
+ <p class="hint">الحصة مقترحة. إذا جهاز الكارديو أو التمرين يسبب لك ألم، اختَر بديل مريح.</p></div>`;
+}
