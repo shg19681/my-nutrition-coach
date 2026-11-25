@@ -1294,7 +1294,7 @@ function azmGymUpdateCardio(input){
  if(!item)return;
  const field=input.dataset.cardioField,value=input.value.trim();
  if(!input.validity.valid||((field==='image'||field==='video')&&value&&!azmGymMediaUrl(value))){
-  input.value=item[field]??'';
+  if(field==='image'||field==='video')input.value=item[field]??'';
   card.querySelector('[data-cardio-status]').textContent='تأكد من القيمة أو استخدم رابط يبدأ بـ https://.';
   return;
  }
@@ -1319,10 +1319,10 @@ function azmGymCardioEntry(item,index){
  <button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeCardio',${index})" aria-label="احذف ${label} من الكارديو">حذف</button></div>
  ${row?azmGymCardioMedia(row):`<div data-cardio-manual-media>${azmGymManualCardioMedia(item)}</div>`}
  <div class="formGrid">
- <label class="field">المدة بالدقايق<input type="number" min="1" max="240" step="1" data-cardio-field="minutes" value="${safe(String(item.minutes||''))}" onchange="azmGymUpdateCardio(this)"></label>
- <label class="field">المسافة (كم)<input type="number" min="0" step="0.01" data-cardio-field="distance" value="${safe(String(item.distance??''))}" onchange="azmGymUpdateCardio(this)"></label>
- <label class="field">الشدة أو السرعة<input data-cardio-field="effort" maxlength="100" value="${safe(item.effort||'')}" onchange="azmGymUpdateCardio(this)"></label>
- <label class="field">ملاحظات<input data-cardio-field="notes" maxlength="300" value="${safe(item.notes||'')}" onchange="azmGymUpdateCardio(this)"></label>
+ <label class="field">المدة بالدقايق<input type="number" min="1" max="240" step="1" data-cardio-field="minutes" value="${safe(String(item.minutes||''))}" oninput="azmGymUpdateCardio(this)"></label>
+ <label class="field">المسافة (كم)<input type="number" min="0" step="0.01" data-cardio-field="distance" value="${safe(String(item.distance??''))}" oninput="azmGymUpdateCardio(this)"></label>
+ <label class="field">الشدة أو السرعة<input data-cardio-field="effort" maxlength="100" value="${safe(item.effort||'')}" oninput="azmGymUpdateCardio(this)"></label>
+ <label class="field">ملاحظات<input data-cardio-field="notes" maxlength="300" value="${safe(item.notes||'')}" oninput="azmGymUpdateCardio(this)"></label>
  ${row?'':`<label class="field">رابط الصورة (اختياري)<input type="url" maxlength="2048" data-cardio-field="image" value="${safe(item.image||'')}" onchange="azmGymUpdateCardio(this)"></label>
  <label class="field">رابط الفيديو (اختياري)<input type="url" maxlength="2048" data-cardio-field="video" value="${safe(item.video||'')}" onchange="azmGymUpdateCardio(this)"></label>`}
  </div><p class="hint" data-cardio-status aria-live="polite"></p></section>`;
