@@ -1180,13 +1180,26 @@ const englishText={
  "المقادير لحصة واحدة. الدياي واللحوم والسمك والروبيان والعيش والبطاط توزن بعد الطبخ، ومن دون عظم أو قشر. يُحسب أي زيت مستخدم.": "Amounts are for one serving. Weigh chicken, meat, fish, shrimp, rice and potatoes after cooking, without bones or shells. Count any oil used.",
  "وزن مطبوخ": "cooked weight",
  "وزن نيئ": "raw weight",
- "كمية": "Amount"
+ "كمية": "Amount",
+ "بيض": "Eggs",
+ "اتبع حالة الوزن المكتوبة بجانب المكوّن. الأرز والبطاطا بعد الطبخ، واللحوم والدجاج دون عظم. البيض والتمر بالعدد كما اعتمدتهما؛ أوزانهما التقريبية في ملف الطباخ. أوقات الطبخ تقديرية وليست ضماناً للسلامة.": "Follow the weight basis shown for each ingredient. Weigh rice and potatoes cooked, and meat and chicken without bones. Use the listed counts for eggs and dates. Approximate weights are in the cook’s guide. Cooking times are estimates and do not guarantee food safety.",
+ "ما فيه بديل مختار من هالقسم": "No alternative selected in this category",
+ "اختر بديل": "Choose an alternative",
+ "الكميات لحصة واحدة. اتبع حالة الوزن المكتوبة بجانب المكوّن.": "Amounts are for one serving. Follow the weight basis shown for each ingredient.",
+ "راجع تفاصيل الوجبة.": "See the meal details.",
+ "نص الوصفة": "Recipe text",
+ "حفظ المسودة": "Save draft",
+ "اعتماد المسودة": "Approve draft",
+ "حفظ تعديلات اليوم": "Save changes for this day",
+ "تركيز اليوم": "Today’s focus",
+ "وتمارين": "and exercises",
+ "أيام التمرين والراحة": "Training and rest days"
 };
 let appLanguage='ar';
 try{appLanguage=localStorage.getItem('coach-language')==='en'?'en':'ar';}catch{}
 function appLocale(){return appLanguage==='en'?'en-GB':'ar-KW';}
 const translationPattern=new RegExp('(?<![\\u0621-\\u065f\\u066e-\\u06d3\\u06fa-\\u06ff])('+Object.keys(englishText).sort((a,b)=>b.length-a.length).map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')(?![\\u0621-\\u065f\\u066e-\\u06d3\\u06fa-\\u06ff])','g');
-function tr(text){return appLanguage==='en'?String(text??'').replace(translationPattern,key=>englishText[key]).replace(/؛/g,'; ').replace(/،/g,','):String(text??'');}
+function tr(text){return appLanguage==='en'?String(text??'').replace(translationPattern,key=>englishText[key]).replace(/(\d+) من (\d+) selected/g,'$1 of $2 selected').replace(/؛/g,'; ').replace(/،/g,','):String(text??'');}
 function languageSettings(){return `<div class="card" style="margin-bottom:16px"><h3>اللغة</h3><div class="field"><label for="appLanguage">لغة التطبيق</label><select id="appLanguage" onchange="setAppLanguage(this.value)"><option value="ar" ${appLanguage==='ar'?'selected':''}>العربية</option><option value="en" ${appLanguage==='en'?'selected':''}>English</option></select></div><p class="hint">تُحفظ اللغة على هذا الجهاز. تبقى بياناتك وصورك كما هي.</p></div>`;}
 function setAppLanguage(value){
  if(!['ar','en'].includes(value))return;
