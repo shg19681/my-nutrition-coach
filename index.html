@@ -8,6 +8,87 @@
 <script src="/meals.js?v=20261119-storage-1"></script>
 <script src="/insights.js?v=20261119-saturday-review-meal-plan-1"></script>
 <script src="/app.js?v=20261119-storage-1"></script>
+
+<style>
+#azm-update-notice{position:fixed;inset-inline-end:1rem;bottom:calc(1rem + env(safe-area-inset-bottom));z-index:1000;max-width:min(24rem,calc(100vw - 2rem));padding:1rem;border:1px solid #b8d2c1;border-radius:14px;background:#f6fbf7;color:#183b31;box-shadow:0 4px 18px #183b3126}
+#azm-update-notice p{margin:0 0 .75rem}
+#azm-update-notice [data-update-actions]{display:flex;flex-wrap:wrap;gap:.5rem}
+</style>
+<aside id="azm-update-notice" hidden data-no-translate>
+ <p role="status"><strong data-update-title></strong><br><span data-update-message></span></p>
+ <div data-update-actions>
+  <button type="button" class="button" data-update-reload></button>
+  <button type="button" class="button secondary" data-update-later></button>
+ </div>
+</aside>
+<script>
+(() => {
+ const notice = document.getElementById('azm-update-notice');
+ const title = notice.querySelector('[data-update-title]');
+ const message = notice.querySelector('[data-update-message]');
+ const reload = notice.querySelector('[data-update-reload]');
+ const later = notice.querySelector('[data-update-later]');
+ const copy = {
+  ar: ['في تحديث جديد لعزم','احفظ شغلك الحالي، وبعدين حدّث لما تكون جاهز.','حدّث الحين','بعدين'],
+  en: ['An AZM update is available','Save your current work and update when you’re ready.','Update now','Later']
+ };
+ const urls = [...new Set([
+  new URL(location.pathname, location.origin).href,
+  ...[...document.querySelectorAll('script[src], link[rel="stylesheet"], link[rel="manifest"]')]
+   .map(element => element.src || element.href)
+   .filter(url => new URL(url).origin === location.origin)
+ ])];
+ const versions = new Map();
+ let checking = false;
+ let updateAvailable = false;
+ let remindAt = 0;
+ let lastCheck = -Infinity;
+
+ function updateNotice() {
+  const current = copy[document.documentElement.lang === 'en' ? 'en' : 'ar'];
+  [title,message,reload,later].forEach((element,index) => { element.textContent = current[index]; });
+  notice.hidden = !updateAvailable || Date.now() < remindAt;
+ }
+
+ async function checkForUpdate() {
+  if (checking || document.hidden || updateAvailable || Date.now() - lastCheck < 10000) {
+   updateNotice();
+   return;
+  }
+  checking = true;
+  lastCheck = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  try {
+   await Promise.all(urls.map(async url => {
+    try {
+     const response = await fetch(url,{method:'HEAD',cache:'no-store',signal:controller.signal});
+     if (!response.ok) return;
+     const version = response.headers.get('ETag') || response.headers.get('Last-Modified');
+     if (!version) return;
+     if (!versions.has(url)) versions.set(url,version);
+     else if (versions.get(url) !== version) updateAvailable = true;
+    } catch {}
+   }));
+  } finally {
+   clearTimeout(timeout);
+   checking = false;
+   updateNotice();
+  }
+ }
+
+ reload.addEventListener('click',() => location.reload());
+ later.addEventListener('click',() => {
+  remindAt = Date.now() + 10 * 60 * 1000;
+  updateNotice();
+ });
+ new MutationObserver(updateNotice).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
+ window.addEventListener('focus',checkForUpdate);
+ window.addEventListener('online',checkForUpdate);
+ document.addEventListener('visibilitychange',checkForUpdate);
+ setInterval(checkForUpdate,120000);
+ checkForUpdate();
+})();
+</script>
 </body>
 </html>
-
