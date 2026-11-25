@@ -1212,6 +1212,7 @@ function azmGymPreviewCardio(select){
 }
 function azmGymChangeDraft(button,action,index){
  const form=button.closest('form'),draft=azmGymDraft(),f=form.elements;
+ const removingSuggestion=action==='removeCardio'&&Boolean(button.closest('[aria-labelledby="gymSuggestedCardio"]'));
  if(action==='removeMove'){
   const [removed]=draft.moves.splice(index,1);
   if(removed)delete draft.checks['custom:'+removed.id];
@@ -1268,6 +1269,9 @@ function azmGymChangeDraft(button,action,index){
  }
  azmGymSaveDraft(draft);
  azmGymRefreshPlan(form);
+ const suggestion=form.querySelector('[aria-labelledby="gymSuggestedCardio"]');
+ if(action==='addSuggestedCardio')suggestion.querySelector('[data-cardio-field="minutes"]')?.focus();
+ if(removingSuggestion)suggestion.querySelector('[data-activity]')?.focus();
 }
 function azmGymRefreshPlan(form){
  const draft=azmGymDraft(),profile=azmGymProfile();
@@ -1310,13 +1314,14 @@ function azmGymManualCardioMedia(item){
  return `${image?`<img src="${safe(image)}" alt="${safe(item.name)}" loading="lazy" referrerpolicy="no-referrer" style="max-width:100%;max-height:180px;object-fit:contain">`:''}
  ${video?`<p><a href="${safe(video)}" target="_blank" rel="noopener noreferrer">شاهد فيديو التمرين</a></p>`:''}`;
 }
-function azmGymCardioEntry(item,index){
+function azmGymCardioEntry(item,index,guidance=''){
  const row=item.activity?azmGymCardioRow(item.activity):azmGymCatalog['لياقة'].find(row=>row[0]===item.name);
  const label=safe(item.name);
  return `<section class="card" data-gym-cardio-entry="${index}" aria-label="${label}" style="margin-block:8px;${item.done?'background-color:#eef7e7':''}">
  <div class="flex"><h5 style="margin:0">${label}</h5>
  <label class="checkline"><input type="checkbox" data-cardio-field="done" aria-label="تم ${label}" ${item.done?'checked':''} onchange="azmGymUpdateCardio(this)">تم</label>
  <button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeCardio',${index})" aria-label="احذف ${label} من الكارديو">حذف</button></div>
+ ${guidance}
  ${row?azmGymCardioMedia(row):`<div data-cardio-manual-media>${azmGymManualCardioMedia(item)}</div>`}
  <div class="formGrid">
  <label class="field">المدة بالدقايق<input type="number" min="1" max="240" step="1" data-cardio-field="minutes" value="${safe(String(item.minutes||''))}" oninput="azmGymUpdateCardio(this)"></label>
@@ -1396,6 +1401,10 @@ function azmGymPlanner(){
 }
 function azmGymPlanHtml(draft,firstWeek,introLevel){
  const p=azmGymPlan(draft,firstWeek,introLevel);
+ const suggestedIndex=draft.extra.findIndex(item=>item.activity===p.cardio[1]||(!item.activity&&item.name===p.cardio[0]));
+ const selectedCardio=draft.extra[suggestedIndex];
+ const cardioGuidance=`${p.time} دقيقة بوتيرة تقدر تتكلم معها. اختم بخمس دقايق بوتيرة أخف.`;
+ const otherCardio=draft.extra.map((item,index)=>index===suggestedIndex?'':azmGymCardioEntry(item,index)).join('');
 
  const warmup=p.legs?'ابدأ بمشي خفيف أو دراجة، بعدها حرّك الكاحل والورك بمدى مريح.':p.moves.length?'ابدأ بمشي خفيف، بعدها حرّك المفاصل اللي تستخدمها اليوم بمدى مريح.':'ابدأ على جهاز الكارديو بوتيرة سهلة وزِدها تدريجيًا.';
  const rows=p.moves.map(({row,group,custom,id})=>{
@@ -1419,11 +1428,13 @@ function azmGymPlanHtml(draft,firstWeek,introLevel){
  <h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${p.moves.length?' سوّ جولة خفيفة من أول تمرين قبل وزن التمرين.':''}</p>
  ${rows?`<h4>الحديد والمقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والوزن والتكرارات</th><th>الشرح</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">اختَر وزن تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p><p class="hint" data-gym-save-status aria-live="polite"></p>`:''}
  <section aria-labelledby="gymSuggestedCardio">
- <h4 id="gymSuggestedCardio">الكارديو المقترح${rows?' بعد المقاومة':''}</h4>
- <p><strong>${safe(p.cardio[0])}</strong> · ${p.time} دقيقة بوتيرة تقدر تتكلم معها. اختم بخمس دقايق بوتيرة أخف.</p>
+ <h4 id="gymSuggestedCardio">${selectedCardio?'الكارديو المختار':'الكارديو المقترح'}${rows?' بعد المقاومة':''}</h4>
+ ${selectedCardio?azmGymCardioEntry(selectedCardio,suggestedIndex,`<p><strong>المدة المقترحة</strong> · ${cardioGuidance}</p>`):`
+ <p><strong>${safe(p.cardio[0])}</strong> · ${cardioGuidance}</p>
  ${azmGymCardioMedia(p.cardio)}
- <button type="button" class="button secondary" data-activity="${safe(p.cardio[1])}" onclick="azmGymChangeDraft(this,'addSuggestedCardio')">أضف المقترح لتماريني</button>
+ <p class="hint">أضف الكارديو المقترح للتمرين، أو اختَر الكارديو اللي يناسبك من قسم «أضف كارديو من عندك».</p>
+ <button type="button" class="button secondary" data-activity="${safe(p.cardio[1])}" onclick="azmGymChangeDraft(this,'addSuggestedCardio')">أضف الكارديو المقترح للتمرين</button>`}
  </section>
- ${draft.extra.length?`<h4>تمارين الكارديو اللي اخترتها</h4>${draft.extra.map(azmGymCardioEntry).join('')}`:''}
+ ${otherCardio?`<h4>تمارين الكارديو الإضافية</h4>${otherCardio}`:''}
  </div>`;
 }
