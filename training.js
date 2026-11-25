@@ -876,7 +876,7 @@ async function prepareCardioPhoto(input){
 }
 
 function coachSummary(sessionOnly=false){return tr(coachSummarySource(sessionOnly));}
-let azmGymSelection={group:'صدر',exercise:0,equipment:'',level:'beginner',cardio:0,open:false};
+let azmGymPlannerOpen=true;
 const azmGymDirectGuides={
  'Chest press':['فيديو جهاز Panatta','https://www.panattasport.com/en/fit-evo/vertical-chest-press-circular/'],
  'Incline chest press':['فيديو جهاز Panatta','https://www.panattasport.com/en/fit-evo/inclined-chest-press/'],
@@ -891,9 +891,6 @@ function azmGymVideo(row){
  const query=encodeURIComponent(english+' exercise technique '+(row[2].startsWith('جهاز')?'Panatta Technogym':'NASM ACE'));
  const link=(label,url)=>'<a href="'+url+'" target="_blank" rel="noopener noreferrer">'+safe(label)+'</a>';
  return (direct?link(...direct)+' · ':'')+link('بحث فيديو لهذا التمرين','https://www.youtube.com/results?search_query='+query);
-}
-function azmGymRows(group,equipment){
- return (azmGymCatalog[group]||[]).filter(row=>!equipment||row[2]===equipment);
 }
 const azmGymMuscles={
  chest:['الصدر',0,[[49,65],[42,52],[28,55],[28,72],[43,76]]],
@@ -1028,89 +1025,146 @@ function azmGymMap(primary,secondary){
 }
 function azmGymTargetHtml(row,group){
  const [primary,secondary]=azmGymTargets(row,group);
- if(!primary.length)return '<small>حدد العضلات من خيارات التمرين اليدوي لعرض الرسم.</small>';
+ if(!primary.length)return '<small>صورة العضلات متوفرة للتمارين المعروفة في المكتبة.</small>';
  const labels=ids=>ids.map(id=>azmGymMuscles[id][0]).join('، ');
  return `<figure style="margin:0;min-width:118px"><img width="118" height="132" loading="lazy" src="${azmGymMap(primary,secondary)}" alt="${safe(labels(primary))}" style="display:block;object-fit:contain"><figcaption><small>الأمام · الخلف<br>الأساسية: ${safe(labels(primary))}${secondary.length?'<br>المساندة: '+safe(labels(secondary)):''}</small></figcaption></figure>`;
 }
 const azmGymDayDrafts=new Map();
-function azmGymDraft(){
- const key=trainingDate||dateNow();
- if(!azmGymDayDrafts.has(key))azmGymDayDrafts.set(key,[]);
+const azmGymRoutineRows={
+ 'جسم كامل':['Leg press','Chest press','Seated cable row','Seated leg curl','Dead bug'],
+ 'دفع':['Chest press','Incline chest press','Machine shoulder press','Dumbbell lateral raise','Triceps rope pushdown'],
+ 'سحب':['Lat pulldown','Seated cable row','Reverse pec deck','Dumbbell shrug','Hammer curl'],
+ 'صدر':['Chest press','Incline chest press','Pec deck fly'],
+ 'ظهر':['Lat pulldown','Seated cable row','Back extension'],
+ 'أرجل':['Leg press','Seated leg curl','Machine hip thrust','Hip abduction','Hip adduction','Standing calf raise'],
+ 'أكتاف':['Machine shoulder press','Dumbbell lateral raise','Reverse pec deck','Dumbbell shrug'],
+ 'ذراع':['Dumbbell biceps curl','Hammer curl','Triceps rope pushdown','Overhead cable triceps extension'],
+ 'بطن':['Dead bug','Side plank','Bird dog'],
+ 'تمارين وظيفية':['TRX squat','Farmer carry','Bodyweight step up'],
+ 'كارديو':[]
+};
+const azmGymRowsByName=new Map(Object.entries(azmGymCatalog).flatMap(([group,rows])=>rows.map(row=>[row[1],{group,row}])));
+function azmGymDraft(date=trainingDate||dateNow()){
+ const key=JSON.stringify([accountId,date]);
+ if(!azmGymDayDrafts.has(key))azmGymDayDrafts.set(key,{types:[],moves:[],cardio:null,extra:[]});
  return azmGymDayDrafts.get(key);
 }
+function azmGymProfile(){
+ try{return JSON.parse(localStorage.getItem('azm-gym-experience:'+accountId))||{};}catch{return {};}
+}
+function azmGymChangeExperience(select){
+ const profile=azmGymProfile();
+ if(!select.value)return;
+ profile.mode=select.value;
+ if(profile.mode==='new'&&!profile.start)profile.start=dateNow();
+ try{localStorage.setItem('azm-gym-experience:'+accountId,JSON.stringify(profile));}catch{}
+ render();
+}
+function azmGymFirstWeek(profile,date){
+ if(profile.mode!=='new'||!profile.start)return false;
+ const days=(Date.parse(date)-Date.parse(profile.start))/86400000;
+ return days>=0&&days<7;
+}
+function azmGymPlan(draft,firstWeek,introLevel){
+ const types=firstWeek?['جسم كامل']:draft.types;
+ const main=types.flatMap(type=>azmGymRoutineRows[type]?.slice(0,1)||[]);
+ const support=types.flatMap(type=>azmGymRoutineRows[type]?.slice(1)||[]);
+ const removeOverlap=types.includes('جسم كامل')?[]:support;
+ const names=[...new Set(types.includes('جسم كامل')?['Leg press','Chest press','Seated cable row','Seated leg curl','Dead bug',...main]:[...main,...removeOverlap])];
+ const recommendations=names.slice(0,Math.max(8,main.length)).map(name=>azmGymRowsByName.get(name));
+ const moves=[...recommendations,...draft.moves];
+ const legs=moves.some(item=>item.group==='أرجل');
+ const options=azmGymCatalog['لياقة'];
+ const cardio=options[draft.cardio??(legs?3:0)];
+ const easy=firstWeek||introLevel;
+ const time=easy?'٨–١٢':legs?'١٠–١٥':moves.length?'١٢–٢٠':'١٥–٢٥';
+ return {moves,cardio,time,legs,easy,active:types.length>0};
+}
 function azmGymChangeDraft(button,action,index){
- const form=button.closest('form'), draft=azmGymDraft();
- if(action==='remove')draft.splice(index,1);
- else if(action==='library'){
-  const group=azmGymSelection.group;
-  const row=azmGymRows(group,azmGymSelection.equipment)[azmGymSelection.exercise];
-  if(row&&!draft.some(item=>item.row===row))draft.push({group,row});
+ const form=button.closest('form'),draft=azmGymDraft(),f=form.elements;
+ if(action==='removeMove')draft.moves.splice(index,1);
+ else if(action==='removeCardio')draft.extra.splice(index,1);
+ else if(action==='addCardio'){
+  const field=f.gymExtraType.value==='other'?f.gymExtraName:f.gymExtraType;
+  const name=field.value.trim(),minutes=Number(f.gymExtraMinutes.value);
+  if(!name){field.focus();return;}
+  if(!minutes||!f.gymExtraMinutes.validity.valid){f.gymExtraMinutes.focus();f.gymExtraMinutes.reportValidity();return;}
+  draft.extra.push({name,minutes});
+  f.gymExtraName.value='';
+  f.gymExtraMinutes.value='';
  }else{
-  const name=form.elements.gymCustomName.value.trim(),device=form.elements.gymCustomDevice.value.trim();
-  if(!name){form.elements.gymCustomName.focus();return;}
-  const fields=['gymCustomWeight','gymCustomSets','gymCustomReps'].map(key=>form.elements[key]);
+  const name=f.gymCustomName.value.trim(),device=f.gymCustomDevice.value.trim();
+  if(!name){f.gymCustomName.focus();return;}
+  const fields=[f.gymCustomWeight,f.gymCustomSets,f.gymCustomReps];
   const invalid=fields.find(input=>!input.validity.valid);
   if(invalid){invalid.reportValidity();return;}
   const [weight,sets,reps]=fields.map(input=>input.value===''?null:Number(input.value));
-  const targets=[...form.querySelectorAll('[name="gymCustomTargets"]:checked')].map(input=>input.value);
-  if(!targets.length){form.querySelector('[name="gymCustomTargets"]').focus();form.querySelector('[data-custom-help]').textContent='اختَر عضلة مستهدفة على الأقل.';return;}
-  if(!draft.some(item=>item.row[0]===name&&item.row[2]===device)){
-   const row=[name,name,device||'تمرين يدوي'];
-   row.targets=targets;
-   row.prescription={weight,sets,reps};
-   draft.push({group:form.elements.gymCustomGroup.value,row});
-  }
-  form.elements.gymCustomName.value='';
-  form.elements.gymCustomDevice.value='';
+  const match=[...azmGymRowsByName.values()].find(item=>item.row[0]===name||item.row[1].toLowerCase()===name.toLowerCase());
+  const row=[name,match?.row[1]||name,device||match?.row[2]||'تمرين يدوي'];
+  row.prescription={weight,sets,reps};
+  if(!match)row.targets=[];
+  draft.moves.push({group:match?.group,row,custom:true});
+  f.gymCustomName.value='';
+  f.gymCustomDevice.value='';
   fields.forEach(input=>input.value='');
-  form.querySelector('[data-custom-help]').textContent='';
-  form.querySelectorAll('[name="gymCustomTargets"]').forEach(input=>input.checked=false);
  }
- form.querySelector('[data-gym-plan]').innerHTML=azmGymPlanHtml(azmGymSelection);
+ azmGymRefreshPlan(form);
 }
-const azmGymCoverage={
- صدر:['chest'],ظهر:['lats','upperBack','lowerBack'],أرجل:['quads','hams','glutes','calves','hipSide','adductors'],
- أكتاف:['frontDelt','sideDelt','rearDelt','traps'],باي:['biceps','forearms'],تراي:['triceps'],
- بطن:['abs','obliques','lowerBack'],'تمارين وظيفية':['quads','glutes','hams','abs','upperBack']
-};
-function azmGymPlan(settings,draft=azmGymDraft()){
- const group=settings.group, rows=azmGymRows(group,settings.equipment), chosen=rows[settings.exercise]||rows[0];
- const cardioRows=azmGymCatalog['لياقة'];
- const cardio=group==='لياقة'?chosen:cardioRows[settings.cardio]||cardioRows[0];
- const selected=draft.length?draft:chosen&&group!=='لياقة'?[{group,row:chosen}]:[];
- const moves=selected.filter(item=>item.group!=='لياقة'||item.row.targets).map(item=>({...item}));
- const extraCardio=selected.filter(item=>item.group==='لياقة'&&!item.row.targets&&item.row!==cardio);
- const groups=[...new Set(moves.map(item=>item.group))];
- const hit=new Set(moves.flatMap(item=>azmGymTargets(item.row,item.group)[0]));
- const gaps=new Set(groups.flatMap(name=>azmGymCoverage[name]||[]).filter(id=>!hit.has(id)));
- const safeSupport=row=>!/ديدلفت|بندول|هاك سكوات|غطس|كيتل بيل سوينغ|عجلة|حبل|معلق|ضغط لاندماين|بيلت سكوات|بار|ألواح|عقلة|قفز/.test(row[0]);
- const candidates=groups.flatMap(name=>azmGymRows(name).filter(row=>safeSupport(row)&&!moves.some(item=>item.row===row)).map(row=>({group:name,row,extra:true})));
- while(gaps.size){
-  let best=null,bestHits=0;
-  for(const item of candidates){
-   const score=azmGymTargets(item.row,item.group)[0].filter(id=>gaps.has(id)).length;
-   if(score>bestHits||(score&&score===bestHits&&item.row[2]===settings.equipment&&best?.row[2]!==settings.equipment)){best=item;bestHits=score;}
-  }
-  if(!best)break;
-  moves.push(best);
-  azmGymTargets(best.row,best.group)[0].forEach(id=>gaps.delete(id));
- }
- if(!draft.length&&moves.length===1){
-  const optional=candidates.find(item=>azmGymTargets(item.row,item.group)[1].join()!==azmGymTargets(moves[0].row,moves[0].group)[1].join());
-  if(optional)moves.push({...optional,extra:false});
- }
- return {cardio,extraCardio,moves,gaps:[...gaps],beginner:settings.level==='beginner'};
+function azmGymRefreshPlan(form){
+ const draft=azmGymDraft(),profile=azmGymProfile();
+ form.querySelector('[data-gym-plan]').innerHTML=azmGymPlanHtml(draft,azmGymFirstWeek(profile,trainingDate||dateNow()),profile.mode==='new');
 }
+function azmGymSelectType(button){
+ const draft=azmGymDraft(),type=button.dataset.type;
+ if(draft.types.includes(type))draft.types=draft.types.filter(item=>item!==type);
+ else draft.types.push(type);
+ button.setAttribute('aria-pressed',String(draft.types.includes(type)));
+ button.classList.toggle('secondary',!draft.types.includes(type));
+ azmGymRefreshPlan(button.closest('form'));
+}
+function azmGymSelectCardio(select){
+ azmGymDraft().cardio=select.value===''?null:Number(select.value);
+ const form=select.closest('form');
+ azmGymRefreshPlan(form);
+ form.elements.gymCardio.focus();
+}
+
 function azmGymPlanner(){
+ const date=trainingDate||dateNow(),profile=azmGymProfile(),draft=azmGymDraft(date);
+ const firstWeek=azmGymFirstWeek(profile,date);
  const groups=Object.keys(azmGymCatalog);
- return `<details class="card" ${azmGymSelection.open?'open':''} ontoggle="azmGymSelection.open=this.open"><summary><strong>مكتبة التمارين · جهّز حصة النادي</strong></summary>
- <form class="formGrid" onchange="if(event.target.name.startsWith('gym')&&!event.target.name.startsWith('gymCustom'))updateAzmGymPlan(this,event.target.name)" onsubmit="event.preventDefault()">
- <label class="field">نوع التمرين<select name="gymGroup">${groups.map(g=>`<option ${g===azmGymSelection.group?'selected':''}>${safe(g)}</option>`).join('')}</select></label>
- <label class="field">الجهاز أو الأداة<select name="gymEquipment">${azmGymEquipmentOptions(azmGymSelection)}</select></label>
- <label class="field">التمرين الأساسي<select name="gymExercise">${azmGymExerciseOptions(azmGymSelection)}</select></label>
- <div class="full"><button class="button secondary" type="button" onclick="azmGymChangeDraft(this,'library')">أضف التمرين المختار للجدول</button></div>
- <label class="field">المستوى<select name="gymLevel"><option value="beginner" ${azmGymSelection.level==='beginner'?'selected':''}>مبتدئ</option><option value="regular" ${azmGymSelection.level==='regular'?'selected':''}>متمرّن بانتظام</option></select></label>
- <label class="field">جهاز الكارديو<select name="gymCardio">${azmGymCatalog['لياقة'].map(([name],i)=>`<option value="${i}" ${i===azmGymSelection.cardio?'selected':''}>${safe(name)}</option>`).join('')}</select></label>
+ return `<details class="card" ${azmGymPlannerOpen?'open':''} ontoggle="azmGymPlannerOpen=this.open"><summary><strong>مكتبة التمارين · جهّز حصة النادي</strong></summary>
+ <form class="formGrid" onsubmit="event.preventDefault()">
+ <div class="field full"><label for="gymExperience">أول مرة تروح النادي؟</label>
+ <select name="gymExperience" id="gymExperience" onchange="azmGymChangeExperience(this)">
+ <option value="">اختر خبرتك بالنادي</option>
+ <option value="new" ${profile.mode==='new'?'selected':''}>إي، أول مرة</option>
+ <option value="experienced" ${profile.mode==='experienced'?'selected':''}>لا، تمرنت من قبل</option>
+ </select></div>
+ ${profile.mode?`
+ ${firstWeek?`<p class="full hint">أسبوعك الأول · حصة جسم كامل بأوزان خفيفة. خلّ يوم راحة بين حصص المقاومة. من اليوم الثامن تقدر تختار نوع حصة اليوم.</p>`:`<fieldset class="full musclePicker"><legend>نوع تمرين اليوم</legend><p class="hint">تقدر تختار أكثر من نوع وتطلع لك حصة وحدة.</p><div class="flex">${Object.keys(azmGymRoutineRows).map(type=>`<button type="button" class="button ${draft.types.includes(type)?'':'secondary'}" data-type="${safe(type)}" aria-pressed="${draft.types.includes(type)}" onclick="azmGymSelectType(this)">${safe(type)}</button>`).join('')}</div></fieldset>`}
+ <div class="full" data-gym-plan>${azmGymPlanHtml(draft,firstWeek,profile.mode==='new')}</div>
+ <section class="full" aria-labelledby="gymCustomTitle">
+ <div class="sectionHead"><h2 id="gymCustomTitle">أضف تمرين من عندك</h2></div>
+ <div class="formGrid">
+ <div class="field"><label for="gymCustomName">اسم التمرين</label><input id="gymCustomName" name="gymCustomName" maxlength="100" placeholder="اكتب اسم التمرين"></div>
+ <div class="field"><label for="gymCustomDevice">اسم الجهاز أو المعدّة (اختياري)</label><input id="gymCustomDevice" name="gymCustomDevice" maxlength="100" placeholder="اكتب اسم الجهاز"></div>
+ <div class="field"><label for="gymCustomWeight">الوزن بالكجم (اختياري)</label><input id="gymCustomWeight" name="gymCustomWeight" type="number" min="0" max="1000" step="0.5"></div>
+ <div class="field"><label for="gymCustomSets">الجولات</label><input id="gymCustomSets" name="gymCustomSets" type="number" min="1" max="30"></div>
+ <div class="field"><label for="gymCustomReps">التكرارات لكل جولة</label><input id="gymCustomReps" name="gymCustomReps" type="number" min="1" max="200"></div>
+ <button class="button full" type="button" onclick="azmGymChangeDraft(this,'custom')">أضف للجدول</button>
+ </div></section>
+
+ <section class="full" aria-labelledby="gymExtraTitle">
+ <div class="sectionHead"><h2 id="gymExtraTitle">أضف كارديو من عندك</h2></div>
+ <div class="formGrid">
+ <label class="field">نوع الكارديو<select name="gymExtraType" onchange="const field=this.form.elements.gymExtraName.closest('label');field.hidden=this.value!=='other';field.style.display=field.hidden?'none':''">
+ <option value="">اختر نشاط</option>${azmGymCatalog['لياقة'].map(row=>`<option>${safe(row[0])}</option>`).join('')}<option value="other">أخرى</option></select></label>
+ <label class="field" hidden style="display:none">اسم الكارديو<input name="gymExtraName" maxlength="100"></label>
+ <label class="field">المدة بالدقايق<input name="gymExtraMinutes" type="number" min="1" max="240" step="1"></label>
+ <button class="button full" type="button" onclick="azmGymChangeDraft(this,'addCardio')">أضف الكارديو للجدول</button>
+ </div></section>
+`:'<p class="hint full">اختَر خبرتك عشان يظهر جدولك.</p>'}
  <details class="full azm-gym-browser"><summary><strong>تصفّح كل التمارين والأجهزة</strong></summary><style>
 .azm-gym-browser .azm-food-card-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-block:10px}
 .azm-gym-browser .azm-food-tile{min-width:0;border:1px solid #d6e4d9;border-radius:16px;background:#f9fbf7;overflow:hidden}
@@ -1126,51 +1180,27 @@ function azmGymPlanner(){
 @media(max-width:390px){.azm-gym-browser .azm-food-card-grid{grid-template-columns:1fr}}
 </style>
  <div class="azm-food-card-grid" style="margin-top:12px">${groups.map((group,i)=>`<details class="azm-food-tile"><summary><span class="azm-food-icon" aria-hidden="true">${['🏋️','🔙','🦵','💪','💪','💪','🎯','⚡','🚴'][i]}</span><span><b>${safe(group)}</b><small>${fmt(azmGymCatalog[group].length)} تمرين</small></span></summary><div class="azm-food-tile-body"><ul>${azmGymCatalog[group].map(row=>`<li><strong>${safe(row[0])}</strong> · ${safe(row[2])}<br>${azmGymVideo(row)}</li>`).join('')}</ul></div></details>`).join('')}</div></details>
- <div class="full" data-gym-plan>${azmGymPlanHtml(azmGymSelection)}</div>
- <section class="full" aria-labelledby="gymCustomTitle">
- <div class="sectionHead"><h2 id="gymCustomTitle">أضف تمرين من عندك</h2></div>
- <div class="formGrid">
- <div class="field full"><label for="gymCustomGroup">القسم الأساسي للتمرين</label><select id="gymCustomGroup" name="gymCustomGroup">${groups.map(g=>`<option ${g===azmGymSelection.group?'selected':''}>${safe(g)}</option>`).join('')}</select></div>
- <div class="field"><label for="gymCustomName">اسم التمرين</label><input id="gymCustomName" name="gymCustomName" maxlength="100" placeholder="اكتب اسم التمرين"></div>
- <div class="field"><label for="gymCustomDevice">اسم الجهاز أو المعدّة (اختياري)</label><input id="gymCustomDevice" name="gymCustomDevice" maxlength="100" placeholder="اكتب اسم الجهاز"></div>
- <div class="field"><label for="gymCustomWeight">الوزن بالكجم (اختياري)</label><input id="gymCustomWeight" name="gymCustomWeight" type="number" min="0" max="1000" step="0.5"></div>
- <div class="field"><label for="gymCustomSets">الجولات</label><input id="gymCustomSets" name="gymCustomSets" type="number" min="1" max="30"></div>
- <div class="field"><label for="gymCustomReps">التكرارات لكل جولة</label><input id="gymCustomReps" name="gymCustomReps" type="number" min="1" max="200"></div>
- <fieldset class="musclePicker full"><legend>العضلات اللي يستهدفها التمرين</legend>${Object.entries(azmGymMuscles).map(([id,[label]])=>`<label class="checkline"><input type="checkbox" name="gymCustomTargets" value="${id}">${safe(label)}</label>`).join('')}</fieldset>
- <p class="full" data-custom-help aria-live="polite"></p><button class="button full" type="button" onclick="azmGymChangeDraft(this,'custom')">أضف للجدول</button>
- </div></section>
+
  </form></details>`;
 }
-function azmGymEquipmentOptions(settings){
- return '<option value="">كل الأجهزة والأدوات</option>'+[...new Set(azmGymRows(settings.group).map(row=>row[2]))].map(e=>`<option value="${safe(e)}" ${e===settings.equipment?'selected':''}>${safe(e)}</option>`).join('');
-}
-function azmGymExerciseOptions(settings){
- return azmGymRows(settings.group,settings.equipment).map((row,i)=>`<option value="${i}" ${i===settings.exercise?'selected':''}>${safe(row[0])}</option>`).join('');
-}
-function updateAzmGymPlan(form,changed){
- const f=form.elements;
- if(changed==='gymGroup'||changed==='gymEquipment'){
-  azmGymSelection.group=f.gymGroup.value;
-  azmGymSelection.exercise=0;
-  azmGymSelection.equipment=changed==='gymGroup'?'':f.gymEquipment.value;
-  f.gymEquipment.innerHTML=azmGymEquipmentOptions(azmGymSelection);
-  f.gymExercise.innerHTML=azmGymExerciseOptions(azmGymSelection);
- }else azmGymSelection.exercise=Number(f.gymExercise.value);
- azmGymSelection.level=f.gymLevel.value;
- azmGymSelection.cardio=Number(f.gymCardio.value);
- form.querySelector('[data-gym-plan]').innerHTML=azmGymPlanHtml(azmGymSelection);
-}
-function azmGymPlanHtml(settings){
- const draft=azmGymDraft(),p=azmGymPlan(settings,draft);
- const chosen=draft.length?`<h4>تمارينك المختارة</h4><ul>${draft.map((item,i)=>`<li>${safe(item.row[0])} <button class="button ghost" type="button" onclick="azmGymChangeDraft(this,'remove',${i})" aria-label="احذف ${safe(item.row[0])} من الجدول">حذف</button></li>`).join('')}</ul>`:'';
- const first=p.moves[0];
- const warmup=p.moves.some(item=>item.group==='أرجل')?'مشي خفيف أو دراجة، بعدها حركة كاحل وحوض بدون حمل.':first?'مشي خفيف، بعدها حرّك المفاصل المستخدمة بمدى مريح.':'ابدأ على جهاز الكارديو بوتيرة سهلة وزِدها تدريجيًا.';
- const primary=first?` بعدها سوِّ جولة أو جولتين خفيفات من أول تمرين لكل قسم اخترته.`:'';
- const gapNote=p.gaps.length?`<p class="hint">عضلات تحتاج اختيار إضافي: ${safe(p.gaps.map(id=>azmGymMuscles[id][0]).join('، '))}. أضف تمرين يستهدفها إذا تبي تضمّنها بالحصة.</p>`:'';
- const resistance=p.moves.length?`<h4>المقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والتكرار</th><th>الشرح</th></tr></thead><tbody>${p.moves.map(({row,group,extra})=>`<tr><td>${safe(row[0])}<br><small>${safe(row[2])}${extra?' · اقتراح لتغطية العضلات':''}</small></td><td>${azmGymTargetHtml(row,group)}</td><td>${row.prescription?.sets??(p.beginner?2:3)} × ${row.prescription?.reps??(/بلانك|توازن/.test(row[0])?'١٥–٣٠ ثانية':/حمل|مشي المزارع|زلاجة/.test(row[0])?'٢٠–٣٠ ثانية':'٨–١٢')}${row.prescription?.weight!=null?`<br><small>${fmt(row.prescription.weight)} كجم</small>`:''}</td><td>${azmGymVideo(row)}</td></tr>`).join('')}</tbody></table></div>${gapNote}<p class="hint">ابدأ بحمل تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p>`:'';
- const time=p.moves.some(item=>item.group==='أرجل')?(p.beginner?'٨–١٢':'١٠–١٥'):(p.beginner?'١٠–١٥':'١٥–٢٥');
- return `<div class="card" style="margin-top:12px;padding:14px">${chosen}<h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${primary}</p>${resistance}
- <h4>الكارديو${p.moves.length?' بعد المقاومة':''}</h4><p>${time} دقيقة بالمجموع. اختَر جهاز واحد أو وزّع الوقت بينهم. خلك على وتيرة تقدر تتكلم معها، واختتم بحركة خفيفة ٥ دقايق.</p>
- ${[{row:p.cardio},...p.extraCardio].map(({row})=>`<div style="margin-bottom:12px"><strong>${safe(row[0])}</strong> · ${azmGymVideo(row)}${azmGymTargetHtml(row,'لياقة')}</div>`).join('')}
- <p class="hint">إذا حركة أو جهاز يسبب لك ألم، اختَر بديل مريح.</p></div>`;
+function azmGymPlanHtml(draft,firstWeek,introLevel){
+ const p=azmGymPlan(draft,firstWeek,introLevel);
+ if(!p.active&&!p.moves.length&&!draft.extra.length)return '<p class="hint">اختَر نوع تمرين اليوم عشان يطلع لك الجدول.</p>';
+ const warmup=p.legs?'ابدأ بمشي خفيف أو دراجة، بعدها حرّك الكاحل والورك بمدى مريح.':p.moves.length?'ابدأ بمشي خفيف، بعدها حرّك المفاصل اللي تستخدمها اليوم بمدى مريح.':'ابدأ على جهاز الكارديو بوتيرة سهلة وزِدها تدريجيًا.';
+ const rows=p.moves.map(({row,group,custom})=>{
+  const timed=/بلانك|توازن|حمل|مشي المزارع/.test(row[0]);
+  const sets=row.prescription?.sets??(p.easy?2:3),reps=row.prescription?.reps??(timed?'١٥–٣٠ ثانية':'٨–١٢');
+  const weight=row.prescription?.weight;
+  const remove=custom?`<button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeMove',${draft.moves.findIndex(item=>item.row===row)})" aria-label="احذف ${safe(row[0])} من الجدول">حذف</button>`:'';
+  return `<tr><td><strong>${safe(row[0])}</strong><br><small>${safe(row[2])}</small>${remove}</td><td>${azmGymTargetHtml(row,group)}</td><td>${fmt(sets)} × ${safe(String(reps))}${weight!=null?`<br><small>${fmt(weight)} كجم</small>`:''}</td><td>${azmGymVideo(row)}</td></tr>`;
+ }).join('');
+ return `<div class="card" style="margin-top:12px;padding:14px"><h3>جدول تمرين اليوم</h3>
+ <h4>التسخين · ٥–١٠ دقايق</h4><p>${warmup}${p.moves.length?' سوّ جولة خفيفة من أول تمرين قبل وزن التمرين.':''}</p>
+ ${rows?`<h4>الحديد والمقاومة</h4><div style="overflow-x:auto"><table class="weightList"><thead><tr><th>التمرين والجهاز</th><th>العضلات المستهدفة</th><th>الجولات والتكرار</th><th>الشرح</th></tr></thead><tbody>${rows}</tbody></table></div><p class="hint">اختَر وزن تقدر تتحكم فيه. ارتح ٦٠–١٢٠ ثانية بين الجولات.</p>`:''}
+ <h4>الكارديو${rows?' بعد المقاومة':''}</h4>
+ <p><strong>${safe(p.cardio[0])}</strong> · ${p.time} دقيقة بوتيرة تقدر تتكلم معها. اختم بخمس دقايق بوتيرة أخف.</p>
+ <label class="field">غيّر الكارديو<select name="gymCardio" onchange="azmGymSelectCardio(this)"><option value="">الاقتراح التلقائي</option>${azmGymCatalog['لياقة'].map((row,i)=>`<option value="${i}" ${draft.cardio===i?'selected':''}>${safe(row[0])}</option>`).join('')}</select></label>
+ <p>${azmGymVideo(p.cardio)}</p>${azmGymTargetHtml(p.cardio,'لياقة')}
+ ${draft.extra.length?`<h4>الكارديو الإضافي</h4><ul>${draft.extra.map((item,i)=>`<li>${safe(item.name)} · ${fmt(item.minutes)} دقيقة <button type="button" class="button ghost" onclick="azmGymChangeDraft(this,'removeCardio',${i})" aria-label="احذف ${safe(item.name)} من الكارديو">حذف</button></li>`).join('')}</ul>`:''}
+ </div>`;
 }
