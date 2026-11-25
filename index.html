@@ -46,8 +46,9 @@
 
  function updateNotice() {
   const current = copy[document.documentElement.lang === 'en' ? 'en' : 'ar'];
-  [title,message,reload,later].forEach((element,index) => { element.textContent = current[index]; });
-  notice.hidden = !updateAvailable || Date.now() < remindAt;
+  [title,message,reload,later].forEach((element,index) => { if (element.textContent !== current[index]) element.textContent = current[index]; });
+  const hidden = !updateAvailable || Date.now() < remindAt;
+  if (notice.hidden !== hidden) notice.hidden = hidden;
  }
 
  async function checkForUpdate() {
