@@ -1202,7 +1202,11 @@ function azmGymGoalPicker(draft){
  <p class="hint">تقدر تختار أكثر من هدف.</p>
  <div class="flex">${Object.entries(azmGymGoals).map(([key,goal])=>`<label class="checkline" for="gym-goal-${key}"><input id="gym-goal-${key}" name="gymGoal" type="checkbox" value="${key}" ${selected.includes(key)?'checked':''} onchange="azmGymChangeGoals(this)">${goal.label}</label>`).join('')}</div>
  ${selected.length>1?`<label class="field" for="gymPrimaryGoal">الهدف الأساسي<select id="gymPrimaryGoal" name="gymPrimaryGoal" onchange="azmGymChangeGoals(this)">${selected.map(key=>`<option value="${key}" ${key===primary?'selected':''}>${azmGymGoals[key].label}</option>`).join('')}</select></label>`:''}
- <label class="field" for="gymPlannedMinutes">الوقت المتاح للحصة بالدقائق (اختياري)<input id="gymPlannedMinutes" name="gymPlannedMinutes" type="number" min="15" max="240" step="1" value="${safe(String(time))}" onchange="if(this.reportValidity())azmGymChangeGoals(this)"></label>
+ <div class="field" style="margin-block-start:12px;padding-block-start:12px;border-top:1px solid #d5e4d9">
+ <label for="gymPlannedMinutes"><strong>${appLanguage==='en'?'Time available before training (minutes)':'الوقت المتاح للحصة (بالدقائق)'}</strong></label>
+ <p class="hint" id="gymPlannedMinutesHelp">${appLanguage==='en'?'Optional. Enter your available time so AZM can adjust the suggested workout.':'اختياري. اكتب الوقت اللي عندك قبل التمرين عشان عزم يضبط الحصة المقترحة.'}</p>
+ <input id="gymPlannedMinutes" name="gymPlannedMinutes" aria-describedby="gymPlannedMinutesHelp" inputmode="numeric" placeholder="${appLanguage==='en'?'e.g. 60':'مثال: ٦٠'}" style="width:100%;max-width:16rem" type="number" min="15" max="240" step="1" value="${safe(String(time))}" onchange="if(this.reportValidity())azmGymChangeGoals(this)">
+ </div>
  </fieldset>`;
 }
 function azmGymPlan(draft,firstWeek,introLevel){
@@ -1471,8 +1475,11 @@ function azmGymPlanner(){
  </div></section>
  <section class="full card" aria-labelledby="gymFinishTitle">
  <h3 id="gymFinishTitle">حفظ حصة النادي</h3>
- <label class="field" for="gymDuration">مدة التمرين بالدقائق</label>
- <input id="gymDuration" name="gymDuration" type="number" min="1" max="1440" step="1" inputmode="numeric" required value="${safe(String(draft.duration??sessionFor(date).gymPlan?.duration??''))}" oninput="azmGymUpdateDuration(this)">
+ <div class="field" style="margin-block:12px">
+ <label for="gymDuration"><strong>${appLanguage==='en'?'Actual session duration (minutes)':'مدة الحصة الفعلية (بالدقائق)'}</strong></label>
+ <p class="hint" id="gymDurationHelp">${appLanguage==='en'?'After your workout, enter how many minutes the whole session took.':'بعد التمرين، اكتب جم دقيقة خذت منك الحصة كاملة.'}</p>
+ <input id="gymDuration" name="gymDuration" aria-describedby="gymDurationHelp" placeholder="${appLanguage==='en'?'e.g. 75':'مثال: ٧٥'}" style="width:100%;max-width:16rem" type="number" min="1" max="1440" step="1" inputmode="numeric" required value="${safe(String(draft.duration??sessionFor(date).gymPlan?.duration??''))}" oninput="azmGymUpdateDuration(this)">
+ </div>
  <button type="button" class="button full" onclick="azmGymFinish(this)">${sessionFor(date).gymPlan?'حفظ التعديلات':'حفظ التمرين وإنهاء الحصة'}</button>
  <p class="hint" data-gym-finish-status aria-live="polite"></p>
  </section>
